@@ -1,10 +1,10 @@
 """
 notify.py — Notificações por e-mail do Social Agent · Salão 365°
-Mesmo padrão do blog agent. Usa Gmail SMTP.
+Usa Gmail SMTP com SSL na porta 465 (compatível com Railway).
 
 Funções públicas:
-  notify_success(subject, body)  — envia notificação de sucesso
-  notify_failure(task_name, error) — envia alerta de falha
+  notify_success(subject, body)     — envia notificação de sucesso
+  notify_failure(task_name, error)  — envia alerta de falha
 """
 
 import os
@@ -20,17 +20,17 @@ BRT = ZoneInfo("America/Sao_Paulo")
 
 # ─── Env vars ────────────────────────────────────────────────────────────────
 
-SMTP_USER     = os.environ.get("SMTP_USER",     "")
-SMTP_PASS     = os.environ.get("SMTP_PASS",     "")
-NOTIFY_EMAIL  = os.environ.get("NOTIFY_EMAIL",  "")
-SMTP_HOST     = os.environ.get("SMTP_HOST",     "smtp.gmail.com")
-SMTP_PORT     = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USER    = os.environ.get("SMTP_USER",    "")
+SMTP_PASS    = os.environ.get("SMTP_PASS",    "")
+NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", "")
+SMTP_HOST    = os.environ.get("SMTP_HOST",    "smtp.gmail.com")
+SMTP_PORT    = int(os.environ.get("SMTP_PORT", "465"))
 
 # ─── Core ─────────────────────────────────────────────────────────────────────
 
 def send_email(subject: str, body: str) -> bool:
     """
-    Envia e-mail via Gmail SMTP.
+    Envia e-mail via Gmail SMTP com SSL (porta 465).
     Retorna True se enviado, False se falhar (nunca levanta exceção).
     """
     if not all([SMTP_USER, SMTP_PASS, NOTIFY_EMAIL]):
@@ -42,17 +42,10 @@ def send_email(subject: str, body: str) -> bool:
         msg["Subject"] = subject
         msg["From"]    = SMTP_USER
         msg["To"]      = NOTIFY_EMAIL
-
-        # Texto plano
         msg.attach(MIMEText(body, "plain", "utf-8"))
+        msg.attach(MIMEText(_to_html(subject, body), "html", "utf-8"))
 
-        # HTML (simples, legível no Gmail)
-        html_body = _to_html(subject, body)
-        msg.attach(MIMEText(html_body, "html", "utf-8"))
-
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-            server.ehlo()
-            server.starttls()
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15) as server:
             server.login(SMTP_USER, SMTP_PASS)
             server.sendmail(SMTP_USER, NOTIFY_EMAIL, msg.as_string())
 
@@ -65,7 +58,6 @@ def send_email(subject: str, body: str) -> bool:
 
 
 def _to_html(subject: str, body: str) -> str:
-    """Converte texto plano para HTML simples formatado."""
     lines_html = []
     for line in body.splitlines():
         line_escaped = (
@@ -109,13 +101,11 @@ def _to_html(subject: str, body: str) -> str:
 # ─── Notificações específicas ─────────────────────────────────────────────────
 
 def notify_success(subject: str, body: str) -> bool:
-    """Notificação de sucesso — prefixo ✓ no assunto."""
     full_subject = f"✓ {subject}" if not subject.startswith("✓") else subject
     return send_email(full_subject, body)
 
 
 def notify_failure(task_name: str, error: str) -> bool:
-    """Notificação de falha — sempre enviada, nunca engole exceção."""
     now_str = datetime.now(BRT).strftime("%d/%m/%Y %H:%M")
     subject = f"⚠️ [Social Agent] Falha — {task_name[:50]}"
     body = (
