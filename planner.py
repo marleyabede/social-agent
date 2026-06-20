@@ -31,19 +31,40 @@ CLICKUP_LIST_ID    = os.environ["CLICKUP_LIST_ID"]
 
 BRT = ZoneInfo("America/Sao_Paulo")
 
-# ─── ClickUp custom field IDs (preencher após criar os campos no ClickUp) ────
-# Obter via: GET https://api.clickup.com/api/v2/list/{list_id}/field
-# Substituir os valores abaixo pelos IDs reais após configuração inicial.
+# ─── ClickUp custom field IDs (lista 901327625285) ───────────────────────────
 
-CF_PERSONA  = os.environ.get("CF_PERSONA",  "PREENCHER")   # dropdown
-CF_FUNIL    = os.environ.get("CF_FUNIL",    "PREENCHER")   # dropdown
-CF_FORMATO  = os.environ.get("CF_FORMATO",  "PREENCHER")   # dropdown
-CF_REDES    = os.environ.get("CF_REDES",    "PREENCHER")   # labels/multi
-CF_HOOK     = os.environ.get("CF_HOOK",     "PREENCHER")   # dropdown
-CF_DATA_PUB = os.environ.get("CF_DATA_PUB", "PREENCHER")   # date
-CF_HORARIO  = os.environ.get("CF_HORARIO",  "PREENCHER")   # short text
-CF_GANCHO   = os.environ.get("CF_GANCHO",   "PREENCHER")   # long text
-CF_TEMA_ID  = os.environ.get("CF_TEMA_ID",  "PREENCHER")   # short text (ex: J-T01)
+CF_PERSONA  = "9148d75d-f32b-41e8-8f13-2f0e482f4a0b"   # dropdown
+CF_FUNIL    = "25ce1c35-4269-459e-be3e-51e83e55c1c5"   # dropdown
+CF_FORMATO  = "71aa0dfb-5753-4129-a7a0-d69d44aba40e"   # dropdown
+CF_REDES    = "3f39ca1a-7ed1-43cb-8595-47a79d9cd014"   # short_text
+CF_HOOK     = "06fe7b07-4a8f-43b1-b543-9bed1d18ef6b"   # dropdown
+CF_HORARIO  = "3cfbc872-be0e-463f-ab5b-9a3339df4220"   # short_text
+CF_GANCHO   = "ee3deffc-2c4d-4eac-bd4f-87cbd9e9db36"   # text
+CF_TEMA_ID  = "79d2e971-1bbf-405c-819e-659083d7835d"   # short_text
+
+# Dropdown option IDs — ClickUp API v2 exige UUID, não string
+_OPT_PERSONA = {
+    "jessica": "191129e1-9eac-4e39-b4c0-ea250db122d1",
+    "carla":   "d50d6bbf-ca3d-40f7-9454-71f9e94c0a83",
+    "leo":     "86499c4c-9208-46b9-8f87-740f8caed149",
+}
+_OPT_FUNIL = {
+    "tofu": "2d2c2643-538b-493b-acf8-2dd0d388cf40",
+    "mofu": "0b18ace7-5b88-4f52-a374-78b6269573c0",
+    "bofu": "6e19459e-8382-4838-be14-cf8898dec53a",
+}
+_OPT_FORMATO = {
+    "reels":     "b738c3e3-2469-457f-a560-72ad25a74393",
+    "carrossel": "1a38bd4f-9c14-4ca7-94d8-f6633d302219",  # "carrosel" no ClickUp
+    "card":      "830fc6a7-f4de-4020-ae59-2f21f73f58f5",
+    "story":     "50eb5404-0fa4-4fd2-a749-da63fc6b800a",
+}
+_OPT_HOOK = {
+    "numero":   "973492ae-94a1-4494-9da3-f82e3ae1ca87",
+    "dor":      "b40f2be9-878b-40e3-9b5f-f34708b90064",
+    "promessa": "09ba33b4-774d-49d6-8025-987553eae4f8",
+    "erro":     "0671f535-9c4d-4bfd-bf12-4c7123735442",
+}
 
 # ─── YOUR_TOPICS ─────────────────────────────────────────────────────────────
 # Estrutura: (id, persona, funil, tema, formato, redes, hook_type)
@@ -504,26 +525,16 @@ def build_description(post: dict) -> str:
 
 
 def build_custom_fields(post: dict) -> list[dict]:
-    """
-    Monta o payload de custom_fields para a API do ClickUp.
-    Valores de dropdown precisam ser os option_ids reais — ajustar após configuração.
-    """
-    # Para dropdowns, o ClickUp aceita o valor string diretamente se a opção existir.
-    # Para labels/multi-select, passar lista de option_ids ou strings.
-    fields = [
-        {"id": CF_PERSONA,  "value": post["persona"]},
-        {"id": CF_FUNIL,    "value": post["funil"]},
-        {"id": CF_FORMATO,  "value": post["formato"]},
+    """Monta o payload de custom_fields para a API do ClickUp."""
+    return [
+        {"id": CF_PERSONA,  "value": _OPT_PERSONA[post["persona"]]},
+        {"id": CF_FUNIL,    "value": _OPT_FUNIL[post["funil"]]},
+        {"id": CF_FORMATO,  "value": _OPT_FORMATO[post["formato"]]},
         {"id": CF_REDES,    "value": ", ".join(post["redes"])},
-        {"id": CF_HOOK,     "value": post["hook"]},
+        {"id": CF_HOOK,     "value": _OPT_HOOK[post["hook"]]},
         {"id": CF_HORARIO,  "value": post["horario"]},
         {"id": CF_GANCHO,   "value": post["gancho"]},
         {"id": CF_TEMA_ID,  "value": post["id"]},
-    ]
-    # Remove campos não configurados (ainda com valor "PREENCHER")
-    return [
-        f for f in fields
-        if f["id"] not in ("PREENCHER", "", None)
     ]
 
 
