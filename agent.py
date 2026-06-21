@@ -51,7 +51,7 @@ _client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 def ask_claude(prompt: str, max_tokens: int = 3000) -> str:
     msg = _client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -79,9 +79,11 @@ def get_cf(task: dict, field_id: str) -> str:
             if val is None:
                 return ""
             if cf.get("type") == "drop_down":
+                _aliases = {"carrosel": "carrossel"}
                 for opt in cf.get("type_config", {}).get("options", []):
                     if opt.get("orderindex") == val:
-                        return opt.get("name", "")
+                        name = opt.get("name", "")
+                        return _aliases.get(name, name)
                 return ""
             return str(val).strip()
     return ""
