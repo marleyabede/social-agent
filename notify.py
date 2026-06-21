@@ -1,6 +1,6 @@
 """
 notify.py — Notificações por e-mail do Social Agent · Salão 365°
-Usa Gmail SMTP com SSL na porta 465 (compatível com Railway).
+Usa Resend (API HTTP) — sem dependência de porta SMTP.
 
 Funções públicas:
   notify_success(subject, body)     — envia notificação de sucesso
@@ -8,10 +8,8 @@ Funções públicas:
 """
 
 import os
-import smtplib
 import logging
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import requests
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -20,35 +18,38 @@ BRT = ZoneInfo("America/Sao_Paulo")
 
 # ─── Env vars ────────────────────────────────────────────────────────────────
 
-SMTP_USER    = os.environ.get("SMTP_USER",    "")
-SMTP_PASS    = os.environ.get("SMTP_PASS",    "")
-NOTIFY_EMAIL = os.environ.get("NOTIFY_EMAIL", "")
-SMTP_HOST    = os.environ.get("SMTP_HOST",    "smtp.gmail.com")
-SMTP_PORT    = int(os.environ.get("SMTP_PORT", "465"))
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+NOTIFY_EMAIL   = os.environ.get("NOTIFY_EMAIL",   "")
+FROM_EMAIL     = os.environ.get("FROM_EMAIL",     "Social Agent <onboarding@resend.dev>")
 
 # ─── Core ─────────────────────────────────────────────────────────────────────
 
 def send_email(subject: str, body: str) -> bool:
     """
-    Envia e-mail via Gmail SMTP com SSL (porta 465).
+    Envia e-mail via Resend API (HTTP).
     Retorna True se enviado, False se falhar (nunca levanta exceção).
     """
-    if not all([SMTP_USER, SMTP_PASS, NOTIFY_EMAIL]):
-        log.warning("[Notify] SMTP não configurado. E-mail não enviado.")
+    if not all([RESEND_API_KEY, NOTIFY_EMAIL]):
+        log.warning("[Notify] RESEND_API_KEY ou NOTIFY_EMAIL não configurados.")
         return False
 
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"]    = SMTP_USER
-        msg["To"]      = NOTIFY_EMAIL
-        msg.attach(MIMEText(body, "plain", "utf-8"))
-        msg.attach(MIMEText(_to_html(subject, body), "html", "utf-8"))
-
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-            server.login(SMTP_USER, SMTP_PASS)
-            server.sendmail(SMTP_USER, NOTIFY_EMAIL, msg.as_string())
-
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from":    FROM_EMAIL,
+                "to":      [NOTIFY_EMAIL],
+                "subject": subject,
+                "text":    body,
+                "html":    _to_html(subject, body),
+            },
+            timeout=15,
+        )
+        resp.raise_for_status()
         log.info(f"[Notify] E-mail enviado: {subject[:60]}")
         return True
 
