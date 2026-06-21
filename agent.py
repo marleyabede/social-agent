@@ -26,22 +26,23 @@ CU_BASE = "https://api.clickup.com/api/v2"
 
 log = logging.getLogger("agent")
 
-# ─── IDs dos custom fields do ClickUp (mesmos do planner.py) ─────────────────
+# ─── IDs dos custom fields do ClickUp (lista 901327625285) ──────────────────
 
-CF_PERSONA  = os.environ.get("CF_PERSONA",  "PREENCHER")
-CF_FUNIL    = os.environ.get("CF_FUNIL",    "PREENCHER")
-CF_FORMATO  = os.environ.get("CF_FORMATO",  "PREENCHER")
-CF_REDES    = os.environ.get("CF_REDES",    "PREENCHER")
-CF_HOOK     = os.environ.get("CF_HOOK",     "PREENCHER")
-CF_GANCHO   = os.environ.get("CF_GANCHO",   "PREENCHER")
-CF_TEMA_ID  = os.environ.get("CF_TEMA_ID",  "PREENCHER")
+# Campos de entrada (lidos pelo agent)
+CF_PERSONA  = "9148d75d-f32b-41e8-8f13-2f0e482f4a0b"   # dropdown
+CF_FUNIL    = "25ce1c35-4269-459e-be3e-51e83e55c1c5"   # dropdown
+CF_FORMATO  = "71aa0dfb-5753-4129-a7a0-d69d44aba40e"   # dropdown
+CF_REDES    = "3f39ca1a-7ed1-43cb-8595-47a79d9cd014"   # short_text
+CF_HOOK     = "06fe7b07-4a8f-43b1-b543-9bed1d18ef6b"   # dropdown
+CF_GANCHO   = "ee3deffc-2c4d-4eac-bd4f-87cbd9e9db36"   # text
+CF_TEMA_ID  = "79d2e971-1bbf-405c-819e-659083d7835d"   # short_text
 
-# Custom fields de saída — criados para salvar os entregáveis gerados
-CF_ROTEIRO  = os.environ.get("CF_ROTEIRO",  "PREENCHER")   # long text
-CF_COPY_IG  = os.environ.get("CF_COPY_IG",  "PREENCHER")   # long text
-CF_COPY_TK  = os.environ.get("CF_COPY_TK",  "PREENCHER")   # long text
-CF_COPY_YT  = os.environ.get("CF_COPY_YT",  "PREENCHER")   # long text
-CF_BRIEFING = os.environ.get("CF_BRIEFING", "PREENCHER")   # long text (JSON)
+# Campos de saída (escritos pelo agent)
+CF_ROTEIRO  = "9277b94b-8aaa-40f6-961c-7f28ba5e3598"   # text
+CF_COPY_IG  = "63144279-d7af-4ebf-a946-25958853b0e0"   # text
+CF_COPY_TK  = "6ed06fa3-05cc-4a08-9b08-fd9d18800bcb"   # text
+CF_COPY_YT  = "bdddb02e-2c6c-4388-b785-3f041d8cb85c"   # text
+CF_BRIEFING = "1bc6c51d-ad67-4a37-8a59-e3e79bf59c32"   # text
 
 # ─── Claude API ──────────────────────────────────────────────────────────────
 
@@ -71,11 +72,18 @@ def parse_json(raw: str) -> dict:
 # ─── Helpers de leitura do card ──────────────────────────────────────────────
 
 def get_cf(task: dict, field_id: str) -> str:
-    """Lê valor de um custom field pelo ID."""
+    """Lê valor de um custom field pelo ID. Para dropdowns, retorna o nome da opção."""
     for cf in task.get("custom_fields", []):
         if cf.get("id") == field_id:
             val = cf.get("value")
-            return str(val).strip() if val is not None else ""
+            if val is None:
+                return ""
+            if cf.get("type") == "drop_down":
+                for opt in cf.get("type_config", {}).get("options", []):
+                    if opt.get("orderindex") == val:
+                        return opt.get("name", "")
+                return ""
+            return str(val).strip()
     return ""
 
 
