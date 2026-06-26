@@ -130,29 +130,17 @@ def cu_headers() -> dict:
 
 
 def save_to_task(task_id: str, custom_fields: list[dict], comment: str = ""):
-    """Salva entregáveis como custom fields e (opcionalmente) como comentário."""
-    # Atualiza custom fields
-    active_fields = [f for f in custom_fields if f["id"] not in ("PREENCHER", "", None)]
-    if active_fields:
-        url = f"{CU_BASE}/task/{task_id}"
-        resp = requests.put(
+    """Salva entregáveis como custom fields via endpoint individual."""
+    for cf in custom_fields:
+        url = f"{CU_BASE}/task/{task_id}/field/{cf['id']}"
+        resp = requests.post(
             url,
             headers=cu_headers(),
-            json={"custom_fields": active_fields},
+            json={"value": cf["value"]},
             timeout=20,
         )
         resp.raise_for_status()
-        log.info(f"[ClickUp] {len(active_fields)} campos salvos na task {task_id}")
-
-    # Salva como comentário (sempre — fallback se campos não configurados)
-    if comment:
-        url = f"{CU_BASE}/task/{task_id}/comment"
-        requests.post(
-            url,
-            headers=cu_headers(),
-            json={"comment_text": comment},
-            timeout=15,
-        )
+    log.info(f"[ClickUp] {len(custom_fields)} campos salvos na task {task_id}")
 
 # ─── Mapa de personas e funis (reutilizado nos 3 prompts) ────────────────────
 
@@ -209,9 +197,61 @@ FORMATO_MAP = {
 DIMENSOES_MAP = {
     "reels":     "1080×1920px (9:16)",
     "story":     "1080×1920px (9:16) — cada frame",
-    "card":      "1080×1080px (1:1) ou 1080×1350px (4:5)",
-    "carrossel": "1080×1080px (1:1) — cada slide",
+    "card":      "1080×1350px (3:4)",
+    "carrossel": "1080×1350px (3:4) — cada slide",
 }
+
+BRANDBOOK = """
+## IDENTIDADE VISUAL OBRIGATÓRIA — SALÃO 365°
+
+### PALETA DE CORES (usar EXATAMENTE estes HEX)
+Cor principal (destaque, CTAs, elementos-chave): #5E4FD3 (Roxo Institucional)
+Escuros: #393276, #453B95, #5145B4
+Claros:  #9E95E5, #BFB9ED, #DFDCF6 (lavanda)
+Neutros claros: #F2F2F2, #EBEBEB, #E0E0E0, #D6D6D6
+Neutros escuros (ink/navy): #201E38, #37354C, #4D4B60, #636274
+Sinalização (APENAS para status/alertas, nunca decoração):
+  Verde: #00AF8D, #22E0A1 | Amarelo: #FECA03, #F0F16E | Vermelho: #EF3F58, #FF739B
+
+Distribuição: 60% / 30% / 10% — combinações aprovadas:
+  1) 60% ink escuro + 30% lavanda + 10% roxo institucional
+  2) 60% lavanda + 30% ink escuro + 10% roxo institucional
+  3) 60% roxo institucional + 30% lavanda + 10% ink escuro
+  4) 60% roxo institucional + 30% ink escuro + 10% lavanda
+
+### TIPOGRAFIA
+Headline/títulos: Argent CF Light (serifada) — SEMPRE maior que o corpo
+Corpo/texto/apoio: General Sans Regular ou SemiBold (sans-serif) — SEMPRE menor que headline
+PROIBIDO usar outras fontes. PROIBIDO usar Argent CF em corpo de texto.
+
+### LOGO
+Nome: "Salão 365" (com ® em lockups). Altura fixa de 20px em posts sociais.
+Posição: inferior, centralizado ou canto inferior direito.
+Incluir APENAS em posts MOFU e BOFU. Presença discreta.
+PROIBIDO: distorcer, rotacionar, aplicar sombra, gradiente, efeitos, trocar cores.
+
+### GRID SOCIAL
+Feed post: 1080×1350px (3:4), margens top/bottom 135px, left/right 35px
+Stories:   1080×1920px (9:16), margens top/bottom 135px, left/right 35px
+
+### ELEMENTO DE APOIO
+Padrão ondulado derivado do símbolo S, em roxo institucional — para fundos.
+Elemento squiggle (linha ondulada) — para sublinhar headlines e palavras-chave.
+Ambos são COMPLEMENTARES, nunca competem com a informação principal.
+
+### ÍCONES
+Estilo outline ou filled, traços arredondados, peso uniforme.
+Cores aprovadas: roxo sobre lavanda, branco sobre roxo, lavanda sobre ink, roxo sobre cinza claro.
+
+### FOTOGRAFIA
+Usar: iluminação natural/suave, ambientes organizados, profissionais em atividade,
+      expressões genuínas, cenários modernos, profundidade de campo suave.
+Evitar: bagunça, poses artificiais, stock genérico, filtros excessivos, cenários corporativos frios.
+Roxo institucional deve estar presente (elementos gráficos, objetos, destaques).
+
+### FORMAS E BOTÕES
+Botões: pill arredondados. Cards: cantos arredondados (squircle). FAB: circular roxo com ícone branco.
+"""
 
 REGRAS_BASE = """
 ## REGRAS EDITORIAIS OBRIGATÓRIAS
@@ -416,11 +456,14 @@ def build_prompt_brief(ctx: dict, gancho: str, primeira_linha: str) -> str:
         "carrossel": "5–8 slides",
     }.get(formato, "1")
 
-    return f"""Você é diretor de arte para conteúdo de redes sociais no nicho de beleza.
+    return f"""Você é diretor de arte para conteúdo de redes sociais da marca Salão 365°.
 Gere um briefing COMPLETO para o designer executar sem fazer nenhuma pergunta.
+ATENÇÃO: siga RIGOROSAMENTE a identidade visual do brandbook abaixo.
+
+{BRANDBOOK}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CONTEXTO
+CONTEXTO DO POST
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Persona:         {PERSONA_MAP[persona]}
 Funil:           {FUNIL_MAP[funil]}
@@ -440,10 +483,13 @@ REGRAS DO BRIEFING
 ✅ Hierarquia clara: o que o olho vê primeiro, segundo, terceiro
 ✅ Consistência de identidade: mesmo estilo nos cards da semana
 ✅ Máximo 7 palavras em qualquer texto de slide de carrossel
+✅ Paleta DEVE usar apenas os HEX do brandbook acima (escolha uma das 4 combinações 60/30/10)
+✅ Tipografia: headline em Argent CF Light, corpo em General Sans Regular/SemiBold
+✅ Grid: respeitar margens do brandbook (135px top/bottom, 35px left/right)
+✅ Elemento squiggle para sublinhar headline se houver espaço visual
+❌ PROIBIDO: inventar cores fora da paleta, usar fontes fora do brandbook
 ❌ PROIBIDO: "use uma cor bonita", "escolha uma fonte legal", "imagem do tema"
 ❌ PROIBIDO: mais de 7 palavras em textos de slide
-
-Logo Salão 365°: incluir apenas em posts MOFU e BOFU, posição inferior direita, tamanho discreto.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SAÍDA — JSON VÁLIDO, SEM MARKDOWN
@@ -452,27 +498,31 @@ SAÍDA — JSON VÁLIDO, SEM MARKDOWN
   "formato": "{formato}",
   "dimensoes": "{dimensoes}",
   "paleta": {{
-    "primaria":   "#hex",
-    "secundaria": "#hex",
-    "texto":      "#hex",
-    "fundo":      "#hex"
+    "primaria":   "#5E4FD3",
+    "secundaria": "escolha do brandbook (lavanda, ink ou tint)",
+    "texto":      "escolha do brandbook (ink ou branco)",
+    "fundo":      "escolha do brandbook (lavanda, ink ou roxo)"
   }},
+  "distribuicao_cor": "ex: 60% #DFDCF6 fundo + 30% #201E38 texto + 10% #5E4FD3 destaques",
   "tipografia": {{
-    "headline": "fonte + peso + tamanho orientativo",
-    "corpo":    "fonte + peso + tamanho orientativo"
+    "headline": "Argent CF Light — tamanho orientativo",
+    "corpo":    "General Sans Regular — tamanho orientativo"
   }},
   "mood": ["palavra1", "palavra2", "palavra3"],
   "estilo_visual": "descrição em 1 frase",
   "slides": [
     {{
       "numero": 1,
-      "texto_principal": "exatamente o que vai escrito",
+      "texto_principal": "exatamente o que vai escrito (máx 7 palavras)",
       "subtexto": "se houver, senão null",
-      "visual": "descrição precisa do elemento visual",
+      "visual": "descrição precisa do elemento visual (foto/ilustração/ícone/padrão)",
       "notas": "instrução extra se necessário"
     }}
   ],
   "logo_salao365": {str(funil in ("mofu", "bofu")).lower()},
+  "logo_posicao": "inferior centralizado, 20px altura" if funil in ("mofu", "bofu") else "N/A",
+  "elemento_apoio": "padrão ondulado, squiggle, ou nenhum",
+  "margens": "top/bottom 135px, left/right 35px",
   "proibidos": ["elemento 1", "elemento 2"],
   "nota_designer": "instrução global que não se encaixa acima"
 }}"""
@@ -549,9 +599,7 @@ def _save_deliverables(
     brief: dict,
     ctx: dict,
 ):
-    """Salva os 3 entregáveis como custom fields + comentário formatado."""
-
-    # Custom fields (apenas os configurados)
+    """Salva os 3 entregáveis nos custom fields do ClickUp."""
     fields = [
         {"id": CF_ROTEIRO,  "value": json.dumps(script,  ensure_ascii=False)},
         {"id": CF_COPY_IG,  "value": json.dumps(copy.get("instagram", {}),  ensure_ascii=False)},
@@ -559,105 +607,9 @@ def _save_deliverables(
         {"id": CF_COPY_YT,  "value": json.dumps(copy.get("youtube", {}),    ensure_ascii=False)},
         {"id": CF_BRIEFING, "value": json.dumps(brief, ensure_ascii=False)},
     ]
-
-    # Comentário formatado — sempre salvo como fallback legível
-    comment = _format_comment(script, copy, brief, ctx)
-
-    save_to_task(task_id, fields, comment=comment)
+    save_to_task(task_id, fields)
 
 
-def _format_comment(script: dict, copy: dict, brief: dict, ctx: dict) -> str:
-    """Formata os entregáveis como comentário Markdown legível no ClickUp."""
-    redes = ctx["redes"]
-    lines = [
-        f"## 🎬 Roteiro — {script.get('titulo_conteudo', ctx['tema'])}",
-        f"",
-        f"**Gancho:** {script.get('gancho', '')}",
-        f"**Duração estimada:** {script.get('duracao_estimada', 'N/A')}",
-        f"",
-        f"```",
-        script.get("roteiro_completo", ""),
-        f"```",
-        f"",
-        f"**Notas de edição:** {script.get('notas_edicao', '')}",
-        f"",
-        f"---",
-        f"## ✍️ Copy / Legendas",
-        f"",
-    ]
-
-    if "instagram" in redes and copy.get("instagram"):
-        ig = copy["instagram"]
-        lines += [
-            f"**Instagram**",
-            f"> {ig.get('primeira_linha', '')}",
-            f"",
-            ig.get("legenda", ""),
-            f"",
-            f"Hashtags: {' '.join(ig.get('hashtags', []))}",
-            f"",
-        ]
-
-    if "tiktok" in redes and copy.get("tiktok"):
-        tk = copy["tiktok"]
-        lines += [
-            f"**TikTok**",
-            tk.get("legenda", ""),
-            f"",
-            f"Hashtags: {' '.join(tk.get('hashtags', []))}",
-            f"",
-        ]
-
-    if "youtube" in redes and copy.get("youtube"):
-        yt = copy["youtube"]
-        lines += [
-            f"**YouTube**",
-            f"Título: {yt.get('titulo', '')}",
-            f"Descrição: {yt.get('descricao', '')}",
-            f"Hashtags: {' '.join(yt.get('hashtags', []))}",
-            f"",
-        ]
-
-    lines += [
-        f"---",
-        f"## 🎨 Briefing de Design",
-        f"",
-        f"**Formato:** {brief.get('formato', '')} | **Dimensões:** {brief.get('dimensoes', '')}",
-        f"**Mood:** {', '.join(brief.get('mood', []))}",
-        f"**Estilo:** {brief.get('estilo_visual', '')}",
-        f"",
-        f"**Paleta:**",
-        f"- Primária:   {brief.get('paleta', {}).get('primaria', '')}",
-        f"- Secundária: {brief.get('paleta', {}).get('secundaria', '')}",
-        f"- Texto:      {brief.get('paleta', {}).get('texto', '')}",
-        f"- Fundo:      {brief.get('paleta', {}).get('fundo', '')}",
-        f"",
-        f"**Tipografia:**",
-        f"- Headline: {brief.get('tipografia', {}).get('headline', '')}",
-        f"- Corpo:    {brief.get('tipografia', {}).get('corpo', '')}",
-        f"",
-        f"**Slides:**",
-    ]
-
-    for slide in brief.get("slides", []):
-        lines += [
-            f"",
-            f"**[Slide {slide.get('numero', '?')}]** {slide.get('texto_principal', '')}",
-            f"Subtexto: {slide.get('subtexto') or '—'}",
-            f"Visual: {slide.get('visual', '')}",
-            f"Notas: {slide.get('notas') or '—'}",
-        ]
-
-    lines += [
-        f"",
-        f"**Proibidos:** {', '.join(brief.get('proibidos', []))}",
-        f"**Nota ao designer:** {brief.get('nota_designer', '')}",
-        f"",
-        f"---",
-        f"_Gerado pelo Social Agent · Salão 365°_",
-    ]
-
-    return "\n".join(lines)
 
 
 # ─── Regeneração parcial (revisão de copy) ───────────────────────────────────
@@ -680,13 +632,10 @@ def regenerate_item(task: dict, feedback: str):
         prompt += f"\n\n## FEEDBACK DE REVISÃO\n{feedback}\nAjuste o roteiro conforme solicitado."
         raw = ask_claude(prompt, max_tokens=2000)
         script = parse_json(raw)
-        gancho = script.get("gancho", ctx.get("gancho", ""))
         fields = [{"id": CF_ROTEIRO, "value": json.dumps(script, ensure_ascii=False)}]
-        comment = f"## 🔄 Roteiro revisado\n\n**Feedback:** {feedback}\n\n**Gancho:** {gancho}\n\n```\n{script.get('roteiro_completo','')}\n```"
-        save_to_task(task_id, fields, comment=comment)
+        save_to_task(task_id, fields)
 
     elif item == "copy":
-        # Busca roteiro existente do card para contexto
         roteiro_str = _get_existing_roteiro(task)
         prompt = build_prompt_copy(ctx, roteiro_str, ctx.get("gancho", ""))
         prompt += f"\n\n## FEEDBACK DE REVISÃO\n{feedback}\nAjuste a copy conforme solicitado."
@@ -697,8 +646,7 @@ def regenerate_item(task: dict, feedback: str):
             {"id": CF_COPY_TK, "value": json.dumps(copy.get("tiktok", {}),    ensure_ascii=False)},
             {"id": CF_COPY_YT, "value": json.dumps(copy.get("youtube", {}),   ensure_ascii=False)},
         ]
-        comment = f"## 🔄 Copy revisada\n\n**Feedback:** {feedback}\n\n{_format_copy_section(copy, ctx)}"
-        save_to_task(task_id, fields, comment=comment)
+        save_to_task(task_id, fields)
 
     elif item == "briefing":
         gancho_atual = _get_existing_gancho(task)
@@ -707,8 +655,7 @@ def regenerate_item(task: dict, feedback: str):
         raw = ask_claude(prompt, max_tokens=2500)
         brief = parse_json(raw)
         fields = [{"id": CF_BRIEFING, "value": json.dumps(brief, ensure_ascii=False)}]
-        comment = f"## 🔄 Briefing revisado\n\n**Feedback:** {feedback}\n\n**Estilo:** {brief.get('estilo_visual','')}\n**Mood:** {', '.join(brief.get('mood',[]))}"
-        save_to_task(task_id, fields, comment=comment)
+        save_to_task(task_id, fields)
 
     else:
         # Feedback genérico — regera os 3
@@ -757,13 +704,3 @@ def _get_existing_gancho(task: dict) -> str:
     return ""
 
 
-def _format_copy_section(copy: dict, ctx: dict) -> str:
-    redes = ctx["redes"]
-    lines = []
-    if "instagram" in redes and copy.get("instagram"):
-        ig = copy["instagram"]
-        lines += [f"**Instagram:** {ig.get('legenda','')[:200]}..."]
-    if "tiktok" in redes and copy.get("tiktok"):
-        tk = copy["tiktok"]
-        lines += [f"**TikTok:** {tk.get('legenda','')}"]
-    return "\n".join(lines)
