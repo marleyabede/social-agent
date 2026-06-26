@@ -129,18 +129,17 @@ def cu_headers() -> dict:
     return {"Authorization": CLICKUP_API_TOKEN, "Content-Type": "application/json"}
 
 
-def save_to_task(task_id: str, custom_fields: list[dict], comment: str = ""):
-    """Salva entregáveis como custom fields via endpoint individual."""
-    for cf in custom_fields:
-        url = f"{CU_BASE}/task/{task_id}/field/{cf['id']}"
-        resp = requests.post(
-            url,
-            headers=cu_headers(),
-            json={"value": cf["value"]},
-            timeout=20,
-        )
-        resp.raise_for_status()
-    log.info(f"[ClickUp] {len(custom_fields)} campos salvos na task {task_id}")
+def save_to_task_description(task_id: str, description: str):
+    """Salva entregáveis na descrição da task (evita limite de custom fields)."""
+    url = f"{CU_BASE}/task/{task_id}"
+    resp = requests.put(
+        url,
+        headers=cu_headers(),
+        json={"description": description},
+        timeout=20,
+    )
+    resp.raise_for_status()
+    log.info(f"[ClickUp] Descrição salva na task {task_id}")
 
 # ─── Mapa de personas e funis (reutilizado nos 3 prompts) ────────────────────
 
@@ -599,15 +598,89 @@ def _save_deliverables(
     brief: dict,
     ctx: dict,
 ):
-    """Salva os 3 entregáveis nos custom fields do ClickUp."""
-    fields = [
-        {"id": CF_ROTEIRO,  "value": json.dumps(script,  ensure_ascii=False)},
-        {"id": CF_COPY_IG,  "value": json.dumps(copy.get("instagram", {}),  ensure_ascii=False)},
-        {"id": CF_COPY_TK,  "value": json.dumps(copy.get("tiktok", {}),     ensure_ascii=False)},
-        {"id": CF_COPY_YT,  "value": json.dumps(copy.get("youtube", {}),    ensure_ascii=False)},
-        {"id": CF_BRIEFING, "value": json.dumps(brief, ensure_ascii=False)},
-    ]
-    save_to_task(task_id, fields)
+    """Salva os 3 entregáveis na descrição da task."""
+    desc = _format_description(script, copy, brief, ctx)
+    save_to_task_description(task_id, desc)
+
+
+def _format_description(script: dict, copy: dict, brief: dict, ctx: dict) -> str:
+    """Formata os entregáveis como Markdown legível na descrição do ClickUp."""
+    redes = ctx["redes"]
+    sections = []
+
+    # ── Roteiro ──
+    sections.append(f"## 🎬 Roteiro — {script.get('titulo_conteudo', ctx['tema'])}")
+    sections.append(f"**Gancho:** {script.get('gancho', '')}")
+    sections.append(f"**Duração:** {script.get('duracao_estimada', 'N/A')}")
+    sections.append(f"\n{script.get('roteiro_completo', '')}")
+    sections.append(f"\n**Notas de edição:** {script.get('notas_edicao', '')}")
+    if script.get("palavras_chave_visuais"):
+        sections.append(f"**Palavras-chave visuais:** {', '.join(script['palavras_chave_visuais'])}")
+
+    # ── Copy / Legendas ──
+    sections.append("\n---\n## ✍️ Copy / Legendas")
+
+    if "instagram" in redes and copy.get("instagram"):
+        ig = copy["instagram"]
+        sections.append(f"\n**Instagram**\n> {ig.get('primeira_linha', '')}")
+        sections.append(ig.get("legenda", ""))
+        sections.append(f"Hashtags: {' '.join(ig.get('hashtags', []))}")
+
+    if "tiktok" in redes and copy.get("tiktok"):
+        tk = copy["tiktok"]
+        sections.append(f"\n**TikTok**\n{tk.get('legenda', '')}")
+        sections.append(f"Hashtags: {' '.join(tk.get('hashtags', []))}")
+
+    if "youtube" in redes and copy.get("youtube"):
+        yt = copy["youtube"]
+        sections.append(f"\n**YouTube**\nTítulo: {yt.get('titulo', '')}")
+        sections.append(f"Descrição: {yt.get('descricao', '')}")
+        sections.append(f"Hashtags: {' '.join(yt.get('hashtags', []))}")
+
+    # ── Briefing de Design ──
+    sections.append("\n---\n## 🎨 Briefing de Design")
+    sections.append(f"**Formato:** {brief.get('formato', '')} | **Dimensões:** {brief.get('dimensoes', '')}")
+    sections.append(f"**Mood:** {', '.join(brief.get('mood', []))}")
+    sections.append(f"**Estilo:** {brief.get('estilo_visual', '')}")
+
+    paleta = brief.get("paleta", {})
+    sections.append(f"\n**Paleta:**")
+    sections.append(f"- Primária: {paleta.get('primaria', '')}")
+    sections.append(f"- Secundária: {paleta.get('secundaria', '')}")
+    sections.append(f"- Texto: {paleta.get('texto', '')}")
+    sections.append(f"- Fundo: {paleta.get('fundo', '')}")
+
+    if brief.get("distribuicao_cor"):
+        sections.append(f"**Distribuição 60/30/10:** {brief['distribuicao_cor']}")
+
+    tipo = brief.get("tipografia", {})
+    sections.append(f"\n**Tipografia:**")
+    sections.append(f"- Headline: {tipo.get('headline', '')}")
+    sections.append(f"- Corpo: {tipo.get('corpo', '')}")
+
+    if brief.get("margens"):
+        sections.append(f"**Margens:** {brief['margens']}")
+
+    sections.append(f"\n**Slides:**")
+    for slide in brief.get("slides", []):
+        sections.append(f"\n**[Slide {slide.get('numero', '?')}]** {slide.get('texto_principal', '')}")
+        if slide.get("subtexto"):
+            sections.append(f"Subtexto: {slide['subtexto']}")
+        sections.append(f"Visual: {slide.get('visual', '')}")
+        if slide.get("notas"):
+            sections.append(f"Notas: {slide['notas']}")
+
+    if brief.get("elemento_apoio"):
+        sections.append(f"\n**Elemento de apoio:** {brief['elemento_apoio']}")
+    if brief.get("logo_salao365"):
+        sections.append(f"**Logo Salão 365°:** {brief.get('logo_posicao', 'inferior, 20px')}")
+    sections.append(f"**Proibidos:** {', '.join(brief.get('proibidos', []))}")
+    if brief.get("nota_designer"):
+        sections.append(f"**Nota ao designer:** {brief['nota_designer']}")
+
+    sections.append("\n---\n_Gerado pelo Social Agent · Salão 365°_")
+
+    return "\n".join(sections)
 
 
 
@@ -627,43 +700,9 @@ def regenerate_item(task: dict, feedback: str):
     item = _detect_item(feedback)
     log.info(f"[Agent] Entregável detectado para revisão: {item}")
 
-    if item == "roteiro":
-        prompt = build_prompt_script(ctx)
-        prompt += f"\n\n## FEEDBACK DE REVISÃO\n{feedback}\nAjuste o roteiro conforme solicitado."
-        raw = ask_claude(prompt, max_tokens=2000)
-        script = parse_json(raw)
-        fields = [{"id": CF_ROTEIRO, "value": json.dumps(script, ensure_ascii=False)}]
-        save_to_task(task_id, fields)
-
-    elif item == "copy":
-        roteiro_str = _get_existing_roteiro(task)
-        prompt = build_prompt_copy(ctx, roteiro_str, ctx.get("gancho", ""))
-        prompt += f"\n\n## FEEDBACK DE REVISÃO\n{feedback}\nAjuste a copy conforme solicitado."
-        raw = ask_claude(prompt, max_tokens=2000)
-        copy = parse_json(raw)
-        fields = [
-            {"id": CF_COPY_IG, "value": json.dumps(copy.get("instagram", {}), ensure_ascii=False)},
-            {"id": CF_COPY_TK, "value": json.dumps(copy.get("tiktok", {}),    ensure_ascii=False)},
-            {"id": CF_COPY_YT, "value": json.dumps(copy.get("youtube", {}),   ensure_ascii=False)},
-        ]
-        save_to_task(task_id, fields)
-
-    elif item == "briefing":
-        gancho_atual = _get_existing_gancho(task)
-        prompt = build_prompt_brief(ctx, gancho_atual, gancho_atual[:80])
-        prompt += f"\n\n## FEEDBACK DE REVISÃO\n{feedback}\nAjuste o briefing conforme solicitado."
-        raw = ask_claude(prompt, max_tokens=2500)
-        brief = parse_json(raw)
-        fields = [{"id": CF_BRIEFING, "value": json.dumps(brief, ensure_ascii=False)}]
-        save_to_task(task_id, fields)
-
-    else:
-        # Feedback genérico — regera os 3
-        log.info("[Agent] Feedback genérico — regerando todos os entregáveis")
-        generate_content(task)
-        return
-
-    log.info(f"[Agent] ✓ {item.capitalize()} revisado e salvo na task {task_id}")
+    log.info(f"[Agent] Regerando todos os entregáveis com feedback: {item}")
+    generate_content(task)
+    log.info(f"[Agent] ✓ Revisão concluída para task {task_id}")
 
 
 def _detect_item(feedback: str) -> str:
