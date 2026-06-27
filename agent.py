@@ -281,257 +281,128 @@ Nunca citar: Booksy, Trinks, iSalon, SetaDigital, Neon, AgendaOnline.
 Se necessário comparar: "outros apps do mercado".
 """
 
-# ─── Prompt 1: Roteiro ───────────────────────────────────────────────────────
+# ─── Prompt único: Roteiro + Copy + Briefing ────────────────────────────────
 
-def build_prompt_script(ctx: dict) -> str:
+def build_prompt_all(ctx: dict) -> str:
     persona   = ctx["persona"]
     funil     = ctx["funil"]
     formato   = ctx["formato"]
     tema      = ctx["tema"]
     gancho    = ctx["gancho"]
-    redes_str = ", ".join(ctx["redes"]).upper()
+    redes     = ctx["redes"]
+    redes_str = ", ".join(redes).upper()
+    dimensoes = DIMENSOES_MAP.get(formato, "1080×1080px")
 
     duracao = "60s" if formato == "reels" else "30s" if formato == "story" else "N/A"
+    num_slides = {"reels": "1 (capa)", "story": "3–5 frames", "card": "1", "carrossel": "5–8 slides"}.get(formato, "1")
 
     gancho_instrucao = (
         f'\nGancho pré-definido (use como abertura exata): "{gancho}"'
         if gancho else
-        "\nCrie um gancho original seguindo a Regra dos 3 Segundos abaixo."
+        "\nCrie um gancho original seguindo a Regra dos 3 Segundos."
     )
 
-    return f"""Você é roteirista de conteúdo para redes sociais especializado no nicho de beleza brasileiro.
+    redes_copy = "\n".join(f'- {r.capitalize()}: {_copy_rede_desc(r)}' for r in redes)
+
+    logo_val = str(funil in ("mofu", "bofu")).lower()
+    logo_pos = '"inferior centralizado, 20px altura"' if funil in ("mofu", "bofu") else '"N/A"'
+
+    return f"""Você é estrategista de conteúdo para redes sociais da marca Salão 365°.
+Gere os 3 entregáveis abaixo de uma vez: ROTEIRO + COPY + BRIEFING DE DESIGN.
 Escreva com a voz de um colega experiente — direto, sem enrolação.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BRIEFING
+BRIEFING DO POST
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Persona:  {PERSONA_MAP[persona]}
 Funil:    {FUNIL_MAP[funil]}
 Tema:     {tema}
 Redes:    {redes_str}
 Formato:  {FORMATO_MAP[formato]}
-Duração:  {duracao}{gancho_instrucao}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-REGRAS ESPECÍFICAS DE ROTEIRO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-## 1. GANCHO — REGRA DOS 3 SEGUNDOS
-Primeiro texto falado/exibido deve ser um dos três tipos:
-  a) Número impactante: "Você pode estar perdendo R$ 400 por mês sem saber"
-  b) Erro comum:       "O maior erro de manicure na hora de confirmar cliente"
-  c) Promessa direta:  "3 passos pra nunca mais ter furo na agenda"
-PROIBIDO começar com: "Oi gente", "Hoje vou falar", apresentação pessoal,
-"Você sabia que", pergunta genérica sem tensão.
-
-## 2. RITMO — CADA FRASE TRABALHA
-Cada linha do roteiro deve ensinar, provocar ou avançar.
-Elimine qualquer frase que só "preenche tempo".
-Teste: se tirar essa frase, o conteúdo fica melhor? Se sim, tire.
-
-## 3. ESTRUTURA POR FORMATO
-Reels/TikTok/Shorts: GANCHO → PROBLEMA → SOLUÇÃO/INSIGHT → CTA
-Carrossel: Slide 1 gancho → Slides 2-N um insight por slide → Slide final CTA
-Story:     Frame 1 gancho → Frames 2-4 desenvolvimento → Frame final CTA
-Card:      Título impactante → 3–5 bullets curtos e diretos
+Duração:  {duracao}
+Dimensões: {dimensoes}{gancho_instrucao}
 
 {REGRAS_BASE}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SAÍDA — JSON VÁLIDO, SEM MARKDOWN
+REGRAS DE ROTEIRO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- GANCHO (3s): número impactante, erro comum ou promessa direta. PROIBIDO: "Oi gente", "Hoje vou falar".
+- Cada frase deve ensinar, provocar ou avançar. Elimine preenchimento.
+- Estrutura: Reels GANCHO→PROBLEMA→SOLUÇÃO→CTA | Carrossel 1 insight/slide | Story 1 ideia/frame | Card título+bullets
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REGRAS DE COPY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Redes: {redes_copy}
+- Primeira linha = gancho (motivo para parar o scroll)
+- Legenda complementa, não repete o roteiro
+- CTA único: TOFU "Salva esse post" | MOFU "Comenta se acontece" | BOFU "→ Link na bio"
+- Hashtags: IG 5–8 (30% nicho pequeno + 40% médio + 30% alcance) | TK 3–5 trend | YT 3–5
+
+{BRANDBOOK}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REGRAS DE BRIEFING DE DESIGN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Paleta: APENAS HEX do brandbook, usando uma das 4 combinações 60/30/10
+- Tipografia: headline Argent CF Light, corpo General Sans Regular/SemiBold
+- Grid: margens 135px top/bottom, 35px left/right
+- Todo texto do visual deve estar ESCRITO (não "algum título")
+- Máx 7 palavras por texto de slide
+- Elemento squiggle para sublinhar headline se houver espaço
+- PROIBIDO inventar cores/fontes fora do brandbook
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SAÍDA — JSON VÁLIDO ÚNICO, SEM MARKDOWN
+Gere APENAS as chaves de redes solicitadas: {redes}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {{
-  "titulo_conteudo": "título interno para identificação no ClickUp",
-  "gancho": "texto exato dos primeiros 3 segundos ou slide 1",
-  "roteiro_completo": "roteiro linha a linha com marcações [0s], [15s] ou [Slide 1] etc",
-  "notas_edicao": "instruções para o editor: cortes, texto na tela, emojis, música sugerida",
-  "duracao_estimada": "{duracao}",
-  "palavras_chave_visuais": ["elemento visual 1", "elemento visual 2", "elemento visual 3"]
-}}"""
-
-
-# ─── Prompt 2: Copy / Legenda ────────────────────────────────────────────────
-
-def build_prompt_copy(ctx: dict, roteiro_completo: str, gancho: str) -> str:
-    persona   = ctx["persona"]
-    funil     = ctx["funil"]
-    tema      = ctx["tema"]
-    redes     = ctx["redes"]
-
-    # Gera só as chaves das redes solicitadas
-    redes_instrucao = "\n".join(
-        f'- {r.capitalize()}: {_copy_rede_desc(r)}' for r in redes
-    )
-
-    return f"""Você é copywriter especializado em redes sociais para o nicho de beleza brasileiro.
-Com base no roteiro abaixo, escreva as legendas para cada rede solicitada.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CONTEXTO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Persona:  {PERSONA_MAP[persona]}
-Funil:    {FUNIL_MAP[funil]}
-Tema:     {tema}
-Gancho do roteiro: {gancho}
-
-Roteiro gerado:
-{roteiro_completo}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-REDES SOLICITADAS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{redes_instrucao}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-REGRAS ESPECÍFICAS DE COPY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-## 1. PRIMEIRA LINHA = GANCHO
-A primeira linha (antes do "ver mais") deve ser o motivo para parar o scroll.
-PROIBIDO começar com o nome do produto, saudação ou pergunta genérica.
-
-## 2. COERÊNCIA SEM REPETIÇÃO
-A legenda complementa o vídeo, não repete. Se o vídeo tem os 3 passos,
-a legenda pode aprofundar 1 passo ou trazer contexto extra.
-
-## 3. CTA ÚNICO E ESPECÍFICO — escolha o mais adequado ao funil:
-  TOFU: "Salva esse post pra não esquecer"
-  MOFU: "Comenta aqui se isso acontece com você"
-  BOFU: "→ Link na bio pra testar grátis"
-PROIBIDO ter 2 CTAs na mesma legenda.
-
-## 4. HASHTAGS ESTRATÉGICAS
-Mix obrigatório por rede:
-  Instagram: 5–8 tags | 30% nicho pequeno (#manicureemcasa) + 40% médio (#manicurebrasil) + 30% alcance (#dicasdebeleza)
-  TikTok:    3–5 tags de tendência do nicho beleza BR
-  YouTube:   3–5 tags no final da descrição
-PROIBIDO: #love #life #instagood ou qualquer tag genérica fora do nicho.
-
-{REGRAS_BASE}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SAÍDA — JSON VÁLIDO, SEM MARKDOWN
-Gere APENAS as chaves das redes solicitadas: {redes}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{{
-  "instagram": {{
-    "legenda": "texto completo com emojis e quebras de linha (se instagram em redes)",
-    "hashtags": ["#tag1", "#tag2"],
-    "primeira_linha": "só o gancho, sem emoji"
+  "roteiro": {{
+    "titulo_conteudo": "título interno para ClickUp",
+    "gancho": "texto exato dos primeiros 3s ou slide 1",
+    "roteiro_completo": "roteiro linha a linha com [0s]/[15s] ou [Slide 1]",
+    "notas_edicao": "instruções para editor: cortes, texto na tela, música",
+    "duracao_estimada": "{duracao}",
+    "palavras_chave_visuais": ["visual1", "visual2", "visual3"]
   }},
-  "tiktok": {{
-    "legenda": "texto curto até 150 chars (se tiktok em redes)",
-    "hashtags": ["#tag1", "#tag2", "#tag3"]
+  "copy": {{
+    "instagram": {{"legenda": "texto completo", "hashtags": ["#tag"], "primeira_linha": "gancho"}},
+    "tiktok": {{"legenda": "até 150 chars", "hashtags": ["#tag"]}},
+    "youtube": {{"titulo": "até 60 chars", "descricao": "até 200 chars", "hashtags": ["#tag"]}}
   }},
-  "youtube": {{
-    "titulo": "título até 60 chars (se youtube em redes)",
-    "descricao": "descrição até 200 chars",
-    "hashtags": ["#tag1", "#tag2", "#tag3"]
+  "briefing": {{
+    "formato": "{formato}",
+    "dimensoes": "{dimensoes}",
+    "paleta": {{"primaria": "#5E4FD3", "secundaria": "#hex", "texto": "#hex", "fundo": "#hex"}},
+    "distribuicao_cor": "60% X + 30% Y + 10% Z",
+    "tipografia": {{"headline": "Argent CF Light — tamanho", "corpo": "General Sans Regular — tamanho"}},
+    "mood": ["palavra1", "palavra2", "palavra3"],
+    "estilo_visual": "descrição em 1 frase",
+    "slides": [{{"numero": 1, "texto_principal": "máx 7 palavras", "subtexto": null, "visual": "descrição precisa", "notas": null}}],
+    "logo_salao365": {logo_val},
+    "logo_posicao": {logo_pos},
+    "elemento_apoio": "padrão ondulado, squiggle, ou nenhum",
+    "margens": "top/bottom 135px, left/right 35px",
+    "proibidos": ["elemento1", "elemento2"],
+    "nota_designer": "instrução global"
   }}
 }}"""
 
 
 def _copy_rede_desc(rede: str) -> str:
     return {
-        "instagram": "legenda até 2200 chars, primeira linha é o gancho, 5–8 hashtags no final",
-        "tiktok":    "legenda curta até 150 chars visíveis, 3–5 hashtags de tendência",
+        "instagram": "legenda até 2200 chars, primeira linha é o gancho, 5–8 hashtags",
+        "tiktok":    "legenda curta até 150 chars, 3–5 hashtags de tendência",
         "youtube":   "título até 60 chars + descrição até 200 chars + 3–5 hashtags",
     }.get(rede, "legenda adaptada para a rede")
-
-
-# ─── Prompt 3: Briefing de Design ────────────────────────────────────────────
-
-def build_prompt_brief(ctx: dict, gancho: str, primeira_linha: str) -> str:
-    persona   = ctx["persona"]
-    funil     = ctx["funil"]
-    formato   = ctx["formato"]
-    tema      = ctx["tema"]
-    dimensoes = DIMENSOES_MAP.get(formato, "1080×1080px")
-
-    num_slides = {
-        "reels":     "1 (capa)",
-        "story":     "3–5 frames",
-        "card":      "1",
-        "carrossel": "5–8 slides",
-    }.get(formato, "1")
-
-    return f"""Você é diretor de arte para conteúdo de redes sociais da marca Salão 365°.
-Gere um briefing COMPLETO para o designer executar sem fazer nenhuma pergunta.
-ATENÇÃO: siga RIGOROSAMENTE a identidade visual do brandbook abaixo.
-
-{BRANDBOOK}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CONTEXTO DO POST
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Persona:         {PERSONA_MAP[persona]}
-Funil:           {FUNIL_MAP[funil]}
-Tema:            {tema}
-Formato:         {formato} — {num_slides}
-Dimensões:       {dimensoes}
-Gancho roteiro:  {gancho}
-Primeira linha:  {primeira_linha}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-REGRAS DO BRIEFING
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ Todo texto que vai no visual deve estar ESCRITO no briefing (não "algum título")
-✅ Referência visual precisa ser descrita com precisão
-   Ex: "foto de manicure vista de cima, unhas em gel, fundo branco, iluminação natural pela esquerda"
-✅ Hierarquia clara: o que o olho vê primeiro, segundo, terceiro
-✅ Consistência de identidade: mesmo estilo nos cards da semana
-✅ Máximo 7 palavras em qualquer texto de slide de carrossel
-✅ Paleta DEVE usar apenas os HEX do brandbook acima (escolha uma das 4 combinações 60/30/10)
-✅ Tipografia: headline em Argent CF Light, corpo em General Sans Regular/SemiBold
-✅ Grid: respeitar margens do brandbook (135px top/bottom, 35px left/right)
-✅ Elemento squiggle para sublinhar headline se houver espaço visual
-❌ PROIBIDO: inventar cores fora da paleta, usar fontes fora do brandbook
-❌ PROIBIDO: "use uma cor bonita", "escolha uma fonte legal", "imagem do tema"
-❌ PROIBIDO: mais de 7 palavras em textos de slide
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SAÍDA — JSON VÁLIDO, SEM MARKDOWN
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{{
-  "formato": "{formato}",
-  "dimensoes": "{dimensoes}",
-  "paleta": {{
-    "primaria":   "#5E4FD3",
-    "secundaria": "escolha do brandbook (lavanda, ink ou tint)",
-    "texto":      "escolha do brandbook (ink ou branco)",
-    "fundo":      "escolha do brandbook (lavanda, ink ou roxo)"
-  }},
-  "distribuicao_cor": "ex: 60% #DFDCF6 fundo + 30% #201E38 texto + 10% #5E4FD3 destaques",
-  "tipografia": {{
-    "headline": "Argent CF Light — tamanho orientativo",
-    "corpo":    "General Sans Regular — tamanho orientativo"
-  }},
-  "mood": ["palavra1", "palavra2", "palavra3"],
-  "estilo_visual": "descrição em 1 frase",
-  "slides": [
-    {{
-      "numero": 1,
-      "texto_principal": "exatamente o que vai escrito (máx 7 palavras)",
-      "subtexto": "se houver, senão null",
-      "visual": "descrição precisa do elemento visual (foto/ilustração/ícone/padrão)",
-      "notas": "instrução extra se necessário"
-    }}
-  ],
-  "logo_salao365": {str(funil in ("mofu", "bofu")).lower()},
-  "logo_posicao": "inferior centralizado, 20px altura" if funil in ("mofu", "bofu") else "N/A",
-  "elemento_apoio": "padrão ondulado, squiggle, ou nenhum",
-  "margens": "top/bottom 135px, left/right 35px",
-  "proibidos": ["elemento 1", "elemento 2"],
-  "nota_designer": "instrução global que não se encaixa acima"
-}}"""
 
 
 # ─── Geração dos 3 entregáveis ───────────────────────────────────────────────
 
 def generate_content(task: dict):
     """
-    Pipeline principal: gera roteiro → copy → briefing e salva tudo no card.
+    Pipeline principal: gera roteiro + copy + briefing em 1 chamada e salva no card.
     Chamado pelo scheduler quando card entra em GERANDO.
     """
     ctx = extract_task_context(task)
@@ -540,53 +411,20 @@ def generate_content(task: dict):
     log.info(f"[Agent] Gerando conteúdo: {ctx['tema'][:60]}")
     log.info(f"[Agent] Persona: {ctx['persona']} | Funil: {ctx['funil']} | Formato: {ctx['formato']}")
 
-    # ── Chamada 1: Roteiro ────────────────────────────────────────────────────
-    log.info("[Agent] Chamada 1/3 — Roteiro...")
-    raw_script = ask_claude(build_prompt_script(ctx), max_tokens=2000)
+    log.info("[Agent] Chamada única — Roteiro + Copy + Briefing...")
+    raw = ask_claude(build_prompt_all(ctx), max_tokens=5000)
     try:
-        script = parse_json(raw_script)
+        result = parse_json(raw)
     except Exception as e:
-        log.error(f"[Agent] Falha no parse do roteiro: {e}")
+        log.error(f"[Agent] Falha no parse: {e}")
         raise
 
-    gancho           = script.get("gancho", ctx.get("gancho", ""))
-    roteiro_completo = script.get("roteiro_completo", "")
-    log.info(f"[Agent] Roteiro OK. Gancho: {gancho[:60]}")
+    script = result.get("roteiro", {})
+    copy   = result.get("copy", {})
+    brief  = result.get("briefing", {})
 
-    # ── Chamada 2: Copy / Legenda ─────────────────────────────────────────────
-    log.info("[Agent] Chamada 2/3 — Copy...")
-    raw_copy = ask_claude(
-        build_prompt_copy(ctx, roteiro_completo, gancho),
-        max_tokens=2000,
-    )
-    try:
-        copy = parse_json(raw_copy)
-    except Exception as e:
-        log.error(f"[Agent] Falha no parse da copy: {e}")
-        raise
+    log.info(f"[Agent] OK. Gancho: {script.get('gancho', '')[:60]}")
 
-    primeira_linha = (
-        copy.get("instagram", {}).get("primeira_linha")
-        or copy.get("tiktok",   {}).get("legenda", "")[:80]
-        or gancho
-    )
-    log.info("[Agent] Copy OK.")
-
-    # ── Chamada 3: Briefing de Design ─────────────────────────────────────────
-    log.info("[Agent] Chamada 3/3 — Briefing de design...")
-    raw_brief = ask_claude(
-        build_prompt_brief(ctx, gancho, primeira_linha),
-        max_tokens=2500,
-    )
-    try:
-        brief = parse_json(raw_brief)
-    except Exception as e:
-        log.error(f"[Agent] Falha no parse do briefing: {e}")
-        raise
-
-    log.info("[Agent] Briefing OK.")
-
-    # ── Salva no ClickUp ──────────────────────────────────────────────────────
     _save_deliverables(task_id, script, copy, brief, ctx)
     log.info(f"[Agent] ✓ Todos os entregáveis salvos na task {task_id}")
 
