@@ -160,22 +160,36 @@ def process_backlog(task: dict):
     update_task_status(task_id, STATUS_GERANDO)
 
 
+_retry_count: dict[str, int] = {}
+MAX_RETRIES = 2
+
 def process_gerando(task: dict):
     """GERANDO → AGUARDA_AP1: gera roteiro, copy e briefing, salva no card."""
     task_id = task["id"]
-    log.info(f"[Executor] Gerando conteúdo: {task['name'][:60]}")
+    retries = _retry_count.get(task_id, 0)
+
+    if retries >= MAX_RETRIES:
+        log.error(f"[Executor] Task {task_id} falhou {MAX_RETRIES}x. Movendo para backlog.")
+        update_task_status(task_id, STATUS_BACKLOG)
+        _retry_count.pop(task_id, None)
+        notify_failure(task["name"], f"Falhou {MAX_RETRIES}x seguidas. Movido para backlog.")
+        return
+
+    log.info(f"[Executor] Gerando conteúdo: {task['name'][:60]} (tentativa {retries + 1}/{MAX_RETRIES})")
 
     try:
         generate_content, _ = _import_agent()
         generate_content(task)
         update_task_status(task_id, STATUS_AGUARDA_AP1)
+        _retry_count.pop(task_id, None)
         log.info(f"[Executor] Conteúdo gerado. Card em aguarda_ap1.")
         notify_success(
             subject=f"[Social Agent] Conteúdo gerado — aguardando aprovação",
             body=f"Card: {task['name']}\nRevisar em: https://app.clickup.com/t/{task_id}",
         )
     except Exception as e:
-        log.error(f"[Executor] Erro ao gerar conteúdo: {e}")
+        _retry_count[task_id] = retries + 1
+        log.error(f"[Executor] Erro ao gerar conteúdo (tentativa {retries + 1}): {e}")
         notify_failure(task["name"], str(e))
 
 
