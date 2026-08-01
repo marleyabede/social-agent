@@ -121,7 +121,10 @@ def extract_publish_context(task: dict) -> dict:
 # Fluxo: criar container → aguardar processamento → publicar
 # Docs: https://developers.facebook.com/docs/instagram-api/guides/content-publishing
 
-IG_BASE = "https://graph.facebook.com/v18.0"
+def _ig_base() -> str:
+    if IG_ACCESS_TOKEN.startswith("IGA"):
+        return "https://graph.instagram.com/v18.0"
+    return "https://graph.facebook.com/v18.0"
 
 FORMATO_IG_MAP = {
     "reels":     "REELS",
@@ -139,6 +142,7 @@ def publish_instagram(copy: dict, media_url: str, formato: str) -> dict:
     if not IG_ACCESS_TOKEN or not IG_BUSINESS_ID:
         raise EnvironmentError("IG_ACCESS_TOKEN e IG_BUSINESS_ID são obrigatórios")
 
+    base       = _ig_base()
     legenda    = copy.get("legenda", "")
     hashtags   = " ".join(copy.get("hashtags", []))
     caption    = f"{legenda}\n\n{hashtags}".strip()
@@ -164,7 +168,7 @@ def publish_instagram(copy: dict, media_url: str, formato: str) -> dict:
         container_params["media_type"] = media_type
 
     resp = requests.post(
-        f"{IG_BASE}/{IG_BUSINESS_ID}/media",
+        f"{base}/{IG_BUSINESS_ID}/media",
         params=container_params,
         timeout=30,
     )
@@ -174,12 +178,12 @@ def publish_instagram(copy: dict, media_url: str, formato: str) -> dict:
 
     # 2. Aguardar processamento (vídeos precisam de mais tempo)
     if is_video:
-        _wait_ig_container(container_id)
+        _wait_ig_container(container_id, base)
 
     # 3. Publicar
     log.info("[Instagram] Publicando...")
     pub_resp = requests.post(
-        f"{IG_BASE}/{IG_BUSINESS_ID}/media_publish",
+        f"{base}/{IG_BUSINESS_ID}/media_publish",
         params={"creation_id": container_id, "access_token": IG_ACCESS_TOKEN},
         timeout=30,
     )
@@ -187,16 +191,16 @@ def publish_instagram(copy: dict, media_url: str, formato: str) -> dict:
     media_id = pub_resp.json()["id"]
 
     # 4. Busca permalink
-    permalink = _get_ig_permalink(media_id)
+    permalink = _get_ig_permalink(media_id, base)
     log.info(f"[Instagram] ✓ Publicado: {permalink}")
     return {"url": permalink, "id": media_id}
 
 
-def _wait_ig_container(container_id: str, max_wait: int = 120):
+def _wait_ig_container(container_id: str, base: str, max_wait: int = 120):
     """Aguarda processamento do vídeo no Instagram (status FINISHED)."""
     for attempt in range(max_wait // 10):
         resp = requests.get(
-            f"{IG_BASE}/{container_id}",
+            f"{base}/{container_id}",
             params={"fields": "status_code", "access_token": IG_ACCESS_TOKEN},
             timeout=15,
         )
@@ -210,9 +214,9 @@ def _wait_ig_container(container_id: str, max_wait: int = 120):
     raise TimeoutError("Instagram não processou o vídeo a tempo")
 
 
-def _get_ig_permalink(media_id: str) -> str:
+def _get_ig_permalink(media_id: str, base: str) -> str:
     resp = requests.get(
-        f"{IG_BASE}/{media_id}",
+        f"{base}/{media_id}",
         params={"fields": "permalink", "access_token": IG_ACCESS_TOKEN},
         timeout=15,
     )
