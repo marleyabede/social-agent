@@ -557,7 +557,7 @@ REGRAS DE COPY
 Redes: {redes_copy}
 - Primeira linha = gancho (motivo para parar o scroll)
 - Legenda complementa, não repete o roteiro
-- VOZ DIRETA: fale com quem lê em 2ª pessoa. PROIBIDO citar a persona pelo nome ("A Carla...", "A Jessica...") ou descrever ela em 3ª pessoa no início. Comece com "Você...", com um cenário numérico, ou direto no problema.
+- VOZ DIRETA: a PRIMEIRA FRASE da legenda deve ser em 2ª pessoa ou entrar direto num cenário numérico. PROIBIDO abrir com 3ª pessoa ("A maioria dos salões...", "Donos de salão..."), com pergunta retórica seguida de 3ª pessoa, ou com o nome da persona. Opções válidas: "Você cobra R$ X e no fim do mês não sobra nada?" / "3 cadeiras, 50 atendimentos por mês, R$ 480 de custo fixo ignorado." / direto no erro com "você".
 - PROIBIDO travessão longo (—) na legenda. Use vírgula, ponto ou dois pontos. Única exceção: seta de CTA →
 - CTA único: TOFU "Salva esse post" | MOFU "Comenta se acontece" | BOFU "→ Link na bio"
 - Hashtags: IG 5–8 (30% nicho pequeno + 40% médio + 30% alcance) | TK 3–5 trend | YT 3–5

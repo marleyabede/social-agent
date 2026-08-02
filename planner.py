@@ -351,7 +351,7 @@ GANCHO_MAP = {
     "C-M03": "Conta no mesmo banco, cartão igual. Você sabe o que é lucro ou acha que sabe?",
     "C-M04": "Confirmação manual, mensagem no grupo, lembrança no WhatsApp. Dá trabalho e ainda falha.",
     "C-M05": "Profissional insatisfeito com horário vai embora. E você recomeça do zero.",
-    "C-M06": "Aumentar preço com medo de perder cliente é o erro mais comum. Tem jeito melhor.",
+    "C-M06": "Você sabe quanto custa, de verdade, cada serviço que você faz?",
     "C-M07": "Preço sem contexto parece caro. Contexto certo, o cliente pede upgrade.",
     "C-B01": "Antes de assinar qualquer sistema, veja se ele tem essas 7 funções",
     "C-B02": "Tem donos que trocam de sistema todo ano. O problema não é o sistema.",
