@@ -172,17 +172,61 @@ FUNIL_MAP = {
     "tofu": (
         "TOPO DE FUNIL — ainda não percebeu que precisa de sistema. "
         "Conteúdo educativo e de identificação. NÃO citar o Salão 365° diretamente. "
-        "Mencionar app de gestão só no final, 1x, como possibilidade natural."
+        "Mencionar 'app de gestão' só no final, 1x, como possibilidade natural. Nunca nomear o produto."
     ),
     "mofu": (
         "MEIO DE FUNIL — consciente do problema, buscando solução. "
-        "Introduzir o Salão 365° no meio e no CTA final. Máx 2 menções."
+        "Introduzir o Salão 365° no meio e no CTA final. Máx 2 menções. "
+        "Ao mencionar, citar 1 funcionalidade real (ver PRODUTO abaixo) que resolve a dor do post."
     ),
     "bofu": (
         "FUNDO DE FUNIL — considerando um app. CTA forte para app.salao365.com. "
-        "Mencionar funcionalidades reais. Máx 3 menções."
+        "Citar 2–3 funcionalidades reais do produto (ver PRODUTO abaixo) que resolvem as dores da persona. "
+        "Mencionar plano disponível se relevante. Máx 3 menções ao produto."
     ),
 }
+
+PRODUTO = """
+## PRODUTO — SALÃO 365° (funcionalidades reais, atualizado 30/07/2026)
+
+### PARA AUTÔNOMAS (jessica e ana)
+- Agendamento online: link público para cliente agendar sozinha, sem WhatsApp, sem criar conta
+- QR code e link únicos para compartilhar no Instagram ou imprimir
+- Lembretes automáticos 24h e 1h antes (push grátis; WhatsApp no plano Profissional — 100/mês)
+- Pacote de sessões pré-pago: cliente paga antes, sessões são debitadas a cada atendimento — reduz no-show e garante receita
+- Cobranças pendentes: marcar agendamento com vencimento e acompanhar quem ainda não pagou
+- Bloquear cliente inadimplente do agendamento online (mensagem personalizada)
+- Histórico completo de atendimentos por cliente
+- Importar clientes direto dos contatos do celular
+- Ficha de anamnese digital (plano Profissional): perguntas antes do agendamento, campos condicionais, assinatura digital — LGPD
+- Registro de despesas com categorias e recorrência (aluguel, produtos, etc.)
+
+### PARA CARLA (salão com equipe)
+- Comissões automáticas (plano Profissional): calcula, fecha por período, paga com recibo PDF enviável por WhatsApp
+- Ajustes de comissão: bônus, desconto ou vale sobre o fechamento
+- Relatórios: resumo diário/mensal, ranking de clientes (quem mais gastou), ranking de serviços (mais vendidos), resumo por profissional
+- Exportar tudo em Excel: clientes, agendamentos, despesas, serviços
+- Equipe com roles: owner, admin, manager, user — controla quem vê o quê
+- Aniversários de clientes com filtro de período (plano Premium ou superior)
+- Despesas recorrentes: aluguel, assinaturas, fornecedor fixo
+
+### PARA LÉO (barbearia com barbeiros)
+- Múltiplos profissionais: grátis 1, Profissional 2, Business 5
+- Cada barbeiro tem agenda própria, horários personalizados, serviços habilitados individualmente
+- Comissão por barbeiro: taxa configurável por serviço, fechamento mensal com recibo PDF
+- Agendamento online com escolha de barbeiro pelo cliente
+- Ranking de barbeiros por receita e atendimentos
+- Pacote de sessões por barbeiro
+
+### PLANOS (resumo para CTAs de BOFU)
+- Grátis: 30 agendamentos/mês, 1 profissional, lembretes push
+- Profissional: 500 agendamentos, 2 profissionais, 100 lembretes WhatsApp/mês, comissões, anamnese
+- Business: 1000 agendamentos, 5 profissionais, 300 lembretes WhatsApp/mês
+- Teste grátis disponível em app.salao365.com
+
+### NUNCA INVENTAR
+Não mencionar funcionalidades fora desta lista. Se o tema não tem match direto com o produto, mencionar apenas o benefício geral (ex: "ter tudo num só lugar") sem inventar recurso específico.
+"""
 
 FORMATO_MAP = {
     "reels": (
@@ -317,6 +361,8 @@ def build_prompt_all(ctx: dict) -> str:
     logo_val = str(funil in ("mofu", "bofu")).lower()
     logo_pos = '"inferior centralizado, 20px altura"' if funil in ("mofu", "bofu") else '"N/A"'
 
+    produto_section = PRODUTO if funil in ("mofu", "bofu") else ""
+
     return f"""Você é estrategista de conteúdo para redes sociais da marca Salão 365°.
 Gere os 3 entregáveis abaixo de uma vez: ROTEIRO + COPY + BRIEFING DE DESIGN.
 Escreva com a voz de um colega experiente — direto, sem enrolação.
@@ -331,6 +377,7 @@ Redes:    {redes_str}
 Formato:  {FORMATO_MAP[formato]}
 Duração:  {duracao}
 Dimensões: {dimensoes}{gancho_instrucao}
+{produto_section}
 
 {REGRAS_BASE}
 
