@@ -45,7 +45,7 @@ CF_TEMA_ID  = "79d2e971-1bbf-405c-819e-659083d7835d"   # short_text
 # Dropdown option IDs — ClickUp API v2 exige UUID, não string
 _OPT_PERSONA = {
     "jessica": "191129e1-9eac-4e39-b4c0-ea250db122d1",
-    "ana":     "PLACEHOLDER_ANA_UUID",  # TODO: adicionar opção "ana" no dropdown CF_PERSONA do ClickUp e substituir este UUID
+    "ana":     "d840f8f0-c696-4234-9b9b-38830ba68dcf",
     "carla":   "d50d6bbf-ca3d-40f7-9454-71f9e94c0a83",
     "leo":     "86499c4c-9208-46b9-8f87-740f8caed149",
 }
