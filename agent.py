@@ -110,12 +110,14 @@ def _infer_persona(title: str) -> str:
         return "leo"
     if "salão" in t or "cabeleireiro" in t:
         return "carla"
+    if "lash" in t or "cílios" in t or "sobrancelha" in t or "brow" in t:
+        return "ana"
     return "jessica"
 
 
 def _parse_redes(raw: str) -> list[str]:
     if not raw:
-        return ["instagram", "tiktok"]
+        return ["instagram"]
     return [r.strip().lower() for r in re.split(r"[,\s]+", raw) if r.strip()]
 
 
@@ -146,15 +148,23 @@ def save_to_task_description(task_id: str, description: str):
 PERSONA_MAP = {
     "jessica": (
         "Jéssica — manicure/nail designer autônoma, 22–38 anos, atende em casa ou studio, "
-        "agenda pelo WhatsApp, sem sistema, só celular"
+        "agenda pelo WhatsApp, sem sistema, só celular. "
+        "Dores: no-show sem aviso, agenda bagunçada no WhatsApp, dificuldade de cobrar sinal, não sabe se tem lucro real."
+    ),
+    "ana": (
+        "Ana — lash/brow designer autônoma, 22–35 anos, atende em casa ou studio compartilhado, "
+        "agenda pelo WhatsApp, quer parecer profissional sem studio fixo caro. "
+        "Dores: clientes somem após 1–2 sessões, dificuldade de sair do WhatsApp, quer imagem profissional sem grande investimento."
     ),
     "carla": (
         "Carla — dona de salão pequeno, 28–45 anos, 2–4 cadeiras, "
-        "trabalha 10–12h/dia, mistura conta pessoal com a do salão"
+        "trabalha 10–12h/dia, mistura conta pessoal com a do salão. "
+        "Dores: gestão de equipe (comissão, escala), controle financeiro com múltiplos profissionais, recrutamento e retenção."
     ),
     "leo": (
         "Léo — dono de barbearia, 25–40 anos, 1–3 barbeiros, "
-        "tech-friendly, já pesquisou outros apps do mercado"
+        "tech-friendly, já pesquisou outros apps do mercado. "
+        "Dores: fidelização de clientes (alta concorrência), precificação e comissão, controle de caixa."
     ),
 }
 

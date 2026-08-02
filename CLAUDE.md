@@ -72,27 +72,40 @@ POST /run/planner   — dispara planejamento manual (requer Bearer AGENT_TOKEN)
 POST /run/execute   — dispara ciclo de execução manual (requer Bearer AGENT_TOKEN)
 ```
 
-## Personas
-- jessica — manicure/nail designer autônoma, 22–38 anos, só celular, WhatsApp como agenda
-- carla   — dona de salão pequeno, 28–45 anos, 2–4 cadeiras, 10–12h/dia
-- leo     — dono de barbearia, 25–40 anos, 1–3 barbeiros, tech-friendly
+## Personas (distribuição real da base — atualizado 01/08/2026)
+- jessica — manicure/nail designer autônoma, 22–38 anos, atende em casa ou studio, WhatsApp como agenda — 30% peso, 57% base
+- ana     — lash/brow designer autônoma, 22–35 anos, atende em casa ou studio compartilhado — 30% peso, 26% base
+- carla   — dona de salão pequeno, 28–45 anos, 2–4 cadeiras, 10–12h/dia — 30% peso, 9% base
+- leo     — dono de barbearia, 25–40 anos, 1–3 barbeiros, tech-friendly — 10% peso, 1% base
+
+Implicação: 60% da audiência é autônoma (jessica + ana). Priorizar linguagem, dores e exemplos para quem trabalha sozinha, em casa ou studio compartilhado.
+
+Dores por persona:
+- jessica: no-show, agenda bagunçada no WhatsApp, dificuldade de cobrar sinal, não sabe se tem lucro real
+- ana:     clientes somem após 1–2 sessões, dificuldade de sair do WhatsApp, quer imagem profissional sem studio fixo
+- carla:   gestão de equipe (comissão/escala), controle financeiro com múltiplos profissionais, recrutamento
+- leo:     fidelização (alta concorrência), precificação/comissão, controle de caixa
 
 ## Funil
 - tofu — topo: educativo, não cita Salão 365° diretamente
 - mofu — meio: consciente do problema, introduz Salão 365° (máx 2x)
 - bofu — fundo: considerando app, CTA direto para app.salao365.com
 
-## Formatos e redes
-- reels     → Instagram + TikTok + YouTube Shorts
+## Formatos e redes (MVP — apenas Instagram)
+- reels     → Instagram only
 - carrossel → Instagram only
-- card      → Instagram + TikTok
+- card      → Instagram only
 - story     → Instagram only
 
-## YOUR_TOPICS — 60 temas (atualizado em 11/06/2026)
+## YOUR_TOPICS — 80 temas (atualizado em 01/08/2026)
 Jessica: 20 (TOFU:8, MOFU:7, BOFU:5)
+Ana:     20 (TOFU:8, MOFU:7, BOFU:5)
 Carla:   20 (TOFU:8, MOFU:7, BOFU:5)
 Léo:     20 (TOFU:8, MOFU:7, BOFU:5)
-Total: 60. Atualizar aqui sempre que YOUR_TOPICS mudar no planner.py.
+Total: 80. Atualizar aqui sempre que YOUR_TOPICS mudar no planner.py.
+
+## ClickUp — pendências manuais
+- Adicionar opção "ana" no dropdown CF_PERSONA (campo 9148d75d-f32b-41e8-8f13-2f0e482f4a0b) e atualizar _OPT_PERSONA["ana"] em planner.py com o UUID retornado
 
 ## Padrão editorial (resumo)
 - Zero travessão longo (—) — único permitido: setas → de CTA

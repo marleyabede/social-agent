@@ -45,6 +45,7 @@ CF_TEMA_ID  = "79d2e971-1bbf-405c-819e-659083d7835d"   # short_text
 # Dropdown option IDs — ClickUp API v2 exige UUID, não string
 _OPT_PERSONA = {
     "jessica": "191129e1-9eac-4e39-b4c0-ea250db122d1",
+    "ana":     "PLACEHOLDER_ANA_UUID",  # TODO: adicionar opção "ana" no dropdown CF_PERSONA do ClickUp e substituir este UUID
     "carla":   "d50d6bbf-ca3d-40f7-9454-71f9e94c0a83",
     "leo":     "86499c4c-9208-46b9-8f87-740f8caed149",
 }
@@ -140,6 +141,29 @@ YOUR_TOPICS = [
     ("L-B03", "leo",     "bofu", "Quanto uma barbearia economiza por mês com sistema de gestão",     "card",      ["instagram"], "numero"),
     ("L-B04", "leo",     "bofu", "Checklist: sua barbearia está pronta para escalar?",               "story",     ["instagram"], "erro"),
     ("L-B05", "leo",     "bofu", "Migrar de app para o Salão 365°: quanto tempo leva e como fazer",  "reels",     ["instagram"], "dor"),
+    # ── ANA · TOFU ───────────────────────────────────────────────────────────
+    ("A-T01", "ana",     "tofu", "Quanto uma lash designer perde por mês com agenda desorganizada", "reels",     ["instagram"], "numero"),
+    ("A-T02", "ana",     "tofu", "A rotina real de uma lash designer autônoma no dia a dia",         "reels",     ["instagram"], "promessa"),
+    ("A-T03", "ana",     "tofu", "Por que cliente some depois de 2 sessões — e o que você pode fazer","reels",    ["instagram"], "erro"),
+    ("A-T04", "ana",     "tofu", "Como parecer mais profissional sem ter studio fixo",               "card",      ["instagram"], "dor"),
+    ("A-T05", "ana",     "tofu", "3 sinais de que seu atendimento de cílios está crescendo",         "carrossel", ["instagram"], "promessa"),
+    ("A-T06", "ana",     "tofu", "Quanto vale a hora de uma lash designer autônoma",                 "card",      ["instagram"], "numero"),
+    ("A-T07", "ana",     "tofu", "O erro que faz lash designer perder cliente fiel sem entender por quê","reels", ["instagram"], "erro"),
+    ("A-T08", "ana",     "tofu", "5 coisas que toda lash designer profissional faz diferente",       "carrossel", ["instagram"], "promessa"),
+    # ── ANA · MOFU ───────────────────────────────────────────────────────────
+    ("A-M01", "ana",     "mofu", "Como acabar com o no-show de cílios sem constranger a cliente",   "reels",     ["instagram"], "numero"),
+    ("A-M02", "ana",     "mofu", "Como cobrar sinal de cílios sem perder cliente — script pronto",  "carrossel", ["instagram"], "promessa"),
+    ("A-M03", "ana",     "mofu", "Como organizar a agenda da semana em 10 minutos na segunda",      "reels",     ["instagram"], "dor"),
+    ("A-M04", "ana",     "mofu", "Por que misturar dinheiro pessoal com o do atendimento é armadilha","carrossel",["instagram"], "dor"),
+    ("A-M05", "ana",     "mofu", "Como fidelizar cliente de cílios — o que realmente funciona",     "card",      ["instagram"], "numero"),
+    ("A-M06", "ana",     "mofu", "Como lidar com cliente que cancela na última hora",               "story",     ["instagram"], "erro"),
+    ("A-M07", "ana",     "mofu", "Como criar uma política de cancelamento sem parecer grossa",      "reels",     ["instagram"], "erro"),
+    # ── ANA · BOFU ───────────────────────────────────────────────────────────
+    ("A-B01", "ana",     "bofu", "Agendamento online para lash designer: como funciona na prática", "reels",     ["instagram"], "promessa"),
+    ("A-B02", "ana",     "bofu", "Como ativar agendamento online pelo Instagram sendo autônoma",    "carrossel", ["instagram"], "promessa"),
+    ("A-B03", "ana",     "bofu", "Quanto tempo você perde por semana gerenciando pelo WhatsApp",    "card",      ["instagram"], "numero"),
+    ("A-B04", "ana",     "bofu", "3 apps que lash designer usa para organizar agenda e caixa",      "carrossel", ["instagram"], "numero"),
+    ("A-B05", "ana",     "bofu", "Checklist: você já está pronta para sair do WhatsApp?",           "story",     ["instagram"], "erro"),
 ]
 
 # ─── Horários de publicação por dia/formato ───────────────────────────────────
@@ -252,7 +276,8 @@ def suggest_topic_via_claude(
     """Usa Claude para sugerir tema quando o pool fixo está esgotado."""
 
     persona_desc = {
-        "jessica": "manicure/nail designer autônoma, 22–38 anos, atende em casa, agenda pelo WhatsApp",
+        "jessica": "manicure/nail designer autônoma, 22–38 anos, atende em casa ou studio, agenda pelo WhatsApp",
+        "ana":     "lash/brow designer autônoma, 22–35 anos, atende em casa ou studio compartilhado, quer parecer profissional sem studio fixo caro",
         "carla":   "dona de salão pequeno, 28–45 anos, 2–4 cadeiras, trabalha 10–12h/dia",
         "leo":     "dono de barbearia, 25–40 anos, 1–3 barbeiros, tech-friendly",
     }
@@ -353,6 +378,26 @@ GANCHO_MAP = {
     "L-B03": "Só o no-show zero já paga o sistema. O resto é lucro.",
     "L-B04": "8 perguntas. Se você responder não em 3 ou mais, precisa resolver antes de abrir outra unidade.",
     "L-B05": "Medo de perder histórico de cliente na migração? Tem como não perder nada.",
+    "A-T01": "Você anotou no caderno, no WhatsApp e na cabeça. Sabe quantos furos isso gera?",
+    "A-T02": "Das 8h às 22h — o que ninguém mostra por trás dos cílios perfeitos",
+    "A-T03": "Ela foi embora depois da segunda sessão sem falar nada. Por quê?",
+    "A-T04": "Sua cliente decide se volta ou não antes mesmo de sentar na maca",
+    "A-T05": "Se você tá recusando cliente, isso já é um sinal",
+    "A-T06": "Pega a calculadora. Vai se surpreender com o resultado.",
+    "A-T07": "Ela sumiu depois de 2 sessões. Não foi o preço.",
+    "A-T08": "Não é técnica. É o que acontece antes e depois do atendimento.",
+    "A-M01": "Confirmação pelo WhatsApp gera 30% de furo. Esse número muda depois desse post.",
+    "A-M02": "Tem uma frase que faz cliente pagar sinal sem questionamento. Vou te mostrar.",
+    "A-M03": "Se você improvisa agenda todo dia, você já perdeu dinheiro antes de começar",
+    "A-M04": "Você acha que tá lucrando. Mas o dinheiro vai pra onde?",
+    "A-M05": "Cliente fiel gasta 3x mais que cliente nova. Você tá investindo em qual?",
+    "A-M06": "Política de cancelamento não é grosseria. É profissionalismo.",
+    "A-M07": "Cancelamento sem aviso é prejuízo confirmado. Tem como evitar.",
+    "A-B01": "Cliente agenda sozinha, você recebe e não precisa ficar no WhatsApp",
+    "A-B02": "Botão de agendamento no perfil. Funciona mesmo sem studio fixo.",
+    "A-B03": "Cronometra amanhã. A resposta vai te incomodar.",
+    "A-B04": "Agenda, caixa e cliente num lugar só. Sem planilha, sem caderno.",
+    "A-B05": "7 perguntas que separam quem vai crescer de quem vai continuar apagando incêndio",
 }
 
 
@@ -454,7 +499,7 @@ def build_week(used_ids: set[str]) -> list[dict]:
     week_str = monday.strftime("%d/%m/%Y")
     log.info(f"[Planner] Planejando semana de {week_str}")
 
-    personas_count = {"jessica": 0, "carla": 0, "leo": 0}
+    personas_count = {"jessica": 0, "ana": 0, "carla": 0, "leo": 0}
     funils_count   = {"tofu": 0, "mofu": 0, "bofu": 0}
     hooks_used     = []
     selected_ids   = set()
@@ -501,7 +546,8 @@ def build_week(used_ids: set[str]) -> list[dict]:
     assert funils_count["tofu"] >= 2,  f"TOFU insuficiente: {funils_count}"
     assert funils_count["mofu"] >= 2,  f"MOFU insuficiente: {funils_count}"
     assert funils_count["bofu"] >= 1,  f"BOFU ausente: {funils_count}"
-    assert all(v >= 1 for v in personas_count.values()), f"Persona faltando: {personas_count}"
+    assert personas_count["jessica"] + personas_count["ana"] >= 2, f"Autônomas (jessica+ana) insuficientes: {personas_count}"
+    assert personas_count["carla"] >= 1 or personas_count["leo"] >= 1, f"Salão/barbearia ausente: {personas_count}"
 
     log.info(f"[Planner] Semana OK — personas: {personas_count} | funil: {funils_count}")
     return posts
