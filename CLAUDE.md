@@ -104,8 +104,6 @@ Carla:   20 (TOFU:8, MOFU:7, BOFU:5)
 Léo:     20 (TOFU:8, MOFU:7, BOFU:5)
 Total: 80. Atualizar aqui sempre que YOUR_TOPICS mudar no planner.py.
 
-## ClickUp — pendências manuais
-- Adicionar opção "ana" no dropdown CF_PERSONA (campo 9148d75d-f32b-41e8-8f13-2f0e482f4a0b) e atualizar _OPT_PERSONA["ana"] em planner.py com o UUID retornado
 
 ## Padrão editorial (resumo)
 - Zero travessão longo (—) — único permitido: setas → de CTA
