@@ -1,5 +1,5 @@
 """
-scheduler.py — Processo principal do Social Agent · Salão 365°
+scheduler.py — Processo principal do Social Agent · Salão 365
 Railway: web: python scheduler.py
 
 Dois loops em background:
@@ -523,7 +523,7 @@ def _next_monday_str() -> str:
 # ─── Entry point ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    banner(f"Social Agent · Salão 365°  |  {datetime.now(BRT).strftime('%d/%m/%Y %H:%M')} BRT")
+    banner(f"Social Agent · Salão 365  |  {datetime.now(BRT).strftime('%d/%m/%Y %H:%M')} BRT")
 
     # Inicia loop do planner em background
     threading.Thread(target=loop_planner, daemon=True, name="loop_planner").start()

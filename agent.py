@@ -1,5 +1,5 @@
 """
-agent.py — Motor de geração de conteúdo do Social Agent · Salão 365°
+agent.py — Motor de geração de conteúdo do Social Agent · Salão 365
 Chamado pelo scheduler.py para cada card em estado GERANDO ou REVISAO_COPY.
 
 Funções públicas (contrato com scheduler.py):
@@ -171,12 +171,12 @@ PERSONA_MAP = {
 FUNIL_MAP = {
     "tofu": (
         "TOPO DE FUNIL — ainda não percebeu que precisa de sistema. "
-        "Conteúdo educativo e de identificação. NÃO citar o Salão 365° diretamente. "
+        "Conteúdo educativo e de identificação. NÃO citar o Salão 365 diretamente. "
         "Mencionar 'app de gestão' só no final, 1x, como possibilidade natural. Nunca nomear o produto."
     ),
     "mofu": (
         "MEIO DE FUNIL — consciente do problema, buscando solução. "
-        "Introduzir o Salão 365° no meio e no CTA final. Máx 2 menções. "
+        "Introduzir o Salão 365 no meio e no CTA final. Máx 2 menções. "
         "Ao mencionar, citar 1 funcionalidade real (ver PRODUTO abaixo) que resolve a dor do post."
     ),
     "bofu": (
@@ -187,7 +187,7 @@ FUNIL_MAP = {
 }
 
 PRODUTO = """
-## PRODUTO — SALÃO 365° (funcionalidades reais, atualizado 30/07/2026)
+## PRODUTO — SALÃO 365 (funcionalidades reais, atualizado 30/07/2026)
 
 ### PARA AUTÔNOMAS (jessica e ana)
 - Agendamento online: link público para cliente agendar sozinha, sem WhatsApp, sem criar conta
@@ -238,8 +238,15 @@ FORMATO_MAP = {
         "Cada frame: 1 ideia. Último frame: CTA com link."
     ),
     "card": (
-        "Card estático — legenda é o conteúdo principal. "
-        "Roteiro = texto do visual: título forte + 3–5 bullets curtos."
+        "Card estático — UMA ÚNICA IMAGEM. Não há slides, não há sequência, não há swipe. "
+        "Todo o conteúdo do visual fica visível de uma vez, numa tela de celular. "
+        "Roteiro = exatamente o que aparece nessa única imagem: "
+        "TÍTULO (máx 7 palavras) + 3–4 bullets ABAIXO DO TÍTULO. "
+        "Cada bullet: máx 6 palavras. Começa com verbo imperativo ou número. "
+        "Se o título começa com 'Como', bullets = os passos numerados da resposta. "
+        "Se começa com 'Quanto/Por que', bullets = os dados/razões da resposta. "
+        "PROIBIDO bullet que não entrega a resposta prometida no título. "
+        "PROIBIDO estrutura de slides (Slide 1, Slide 2...) — isso é formato carrossel, não card."
     ),
     "carrossel": (
         "Carrossel — 5 a 8 slides. Slide 1: gancho/promessa. "
@@ -255,7 +262,7 @@ DIMENSOES_MAP = {
 }
 
 BRANDBOOK = """
-## IDENTIDADE VISUAL OBRIGATÓRIA — SALÃO 365°
+## IDENTIDADE VISUAL OBRIGATÓRIA — SALÃO 365
 
 ### PALETA DE CORES (usar EXATAMENTE estes HEX)
 Cor principal (destaque, CTAs, elementos-chave): #5E4FD3 (Roxo Institucional)
@@ -327,13 +334,162 @@ Obrigatório 2 dos 4 elementos:
 ### CTA — SÓ APÓS DOR
 CTA só aparece APÓS momento de dor: perda financeira, erro, cálculo de prejuízo.
 NUNCA no começo ou no meio de explicação.
-Formato máximo: 1 linha. "→ O Salão 365° resolve isso. Teste grátis."
+Formato máximo: 1 linha. "→ O Salão 365 resolve isso. Teste grátis."
 TOFU: mencionar app só 1x, no final, como possibilidade natural.
 
 ### ANTI-CONCORRENTE
 Nunca citar: Booksy, Trinks, iSalon, SetaDigital, Neon, AgendaOnline.
 Se necessário comparar: "outros apps do mercado".
 """
+
+# ─── Helpers format-specific ────────────────────────────────────────────────
+
+def _secao_conteudo(formato: str) -> str:
+    """Retorna a seção de regras de conteúdo específica para o formato."""
+    if formato == "card":
+        return """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VISUAL DO CARD (card não é vídeo — não tem roteiro, não tem gancho, não tem slides)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Card = 1 imagem estática. Todo o conteúdo visual cabe numa única tela de celular de uma vez.
+
+Estrutura obrigatória do visual (exatamente isso, nada mais):
+  HEADLINE: [resposta direta ao tema — máx 7 palavras]
+  • BULLET 1: [verbo imperativo ou número — máx 6 palavras]
+  • BULLET 2: [verbo imperativo ou número — máx 6 palavras]
+  • BULLET 3: [verbo imperativo ou número — máx 6 palavras]
+  (• BULLET 4: opcional, só se absolutamente necessário)
+
+Regras dos bullets:
+- "Como X" → bullets são os PASSOS de X (numerados, em ordem)
+- "Quanto X" → bullets são os NÚMEROS que respondem X
+- "Por que X" → bullets são as RAZÕES de X
+- Bullet que não responde a promessa do headline = errado, corte
+
+PROIBIDO no visual do card: gancho, slides, notas de edição, cenas, texto de vídeo, duração
+O GANCHO vai na primeira linha da LEGENDA (seção copy), não no visual."""
+
+    if formato == "carrossel":
+        return """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REGRAS DE ROTEIRO — CARROSSEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- COERÊNCIA TEMÁTICA: todos os slides respondem ao Tema. PROIBIDO misturar dois assuntos.
+- Estrutura: [Slide 1] Capa/Gancho → [Slides 2–N] 1 insight por slide → [Último slide] CTA
+- Capa: headline forte (máx 7 palavras) + gancho que tease o conteúdo
+- Slides intermediários: 1 ideia por slide, máx 2 frases curtas
+- Último slide: CTA direto, fundo roxo (#5E4FD3) para contraste
+- GANCHO SERVE O TEMA: o gancho anuncia exatamente o que o carrossel entrega"""
+
+    # reels / story
+    return """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REGRAS DE ROTEIRO — VÍDEO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- COERÊNCIA TEMÁTICA: gancho, roteiro e copy respondem ao mesmo Tema. PROIBIDO misturar assuntos.
+- GANCHO (3s): número impactante, erro comum ou promessa direta. PROIBIDO: "Oi gente", "Hoje vou falar".
+- GANCHO SERVE O TEMA: o gancho tease a resposta do Tema. Gancho desconectado = promessa falsa.
+- Cada frase deve ensinar, provocar ou avançar. Elimine preenchimento.
+- Estrutura Reels: [0s] GANCHO → [5s] PROBLEMA → [15s] SOLUÇÃO passo a passo → [50s] CTA
+- Estrutura Story: 1 ideia por frame, 3–5 frames, CTA no último"""
+
+
+def _schema_saida(formato: str, redes: list, duracao: str, dimensoes: str,
+                  logo_val: str, logo_pos: str) -> str:
+    """Retorna o schema JSON de saída específico para o formato."""
+    redes_str = str(redes)
+
+    copy_schema = f"""  "copy": {{
+    "instagram": {{"legenda": "texto completo", "hashtags": ["#tag"], "primeira_linha": "gancho da legenda"}},
+    "tiktok": {{"legenda": "até 150 chars", "hashtags": ["#tag"]}},
+    "youtube": {{"titulo": "até 60 chars", "descricao": "até 200 chars", "hashtags": ["#tag"]}}
+  }}"""
+
+    briefing_base = f"""    "formato": "{formato}",
+    "dimensoes": "{dimensoes}",
+    "paleta": {{"primaria": "#5E4FD3", "secundaria": "#hex", "texto": "#hex", "fundo": "#hex"}},
+    "distribuicao_cor": "60% X + 30% Y + 10% Z",
+    "tipografia": {{"headline": "Argent CF Light — tamanho", "corpo": "General Sans Regular — tamanho"}},
+    "mood": ["palavra1", "palavra2", "palavra3"],
+    "estilo_visual": "descrição em 1 frase",
+    "logo_salao365": {logo_val},
+    "logo_posicao": {logo_pos},
+    "elemento_apoio": "squiggle, padrão ondulado, ou nenhum",
+    "margens": "top/bottom 135px, left/right 35px",
+    "proibidos": ["elemento1", "elemento2"],
+    "nota_designer": "instrução global para o designer" """
+
+    if formato == "card":
+        return f"""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SAÍDA — JSON VÁLIDO ÚNICO, SEM MARKDOWN
+Gere APENAS as chaves de redes solicitadas: {redes_str}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{
+  "visual_card": {{
+    "headline": "máx 7 palavras — entrega a promessa do tema",
+    "bullets": [
+      "bullet 1 — verbo imperativo ou número — máx 6 palavras",
+      "bullet 2 — máx 6 palavras",
+      "bullet 3 — máx 6 palavras"
+    ],
+    "palavras_chave_visuais": ["visual1", "visual2", "visual3"]
+  }},
+{copy_schema},
+  "briefing": {{
+{briefing_base},
+    "layout_card": {{
+      "headline": "idêntica a visual_card.headline",
+      "bullets_texto": "• bullet1\\n• bullet2\\n• bullet3",
+      "visual": "descrição visual completa do card único",
+      "notas": "instruções ao designer sobre hierarquia e espaçamento"
+    }}
+  }}
+}}"""
+
+    if formato == "carrossel":
+        return f"""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SAÍDA — JSON VÁLIDO ÚNICO, SEM MARKDOWN
+Gere APENAS as chaves de redes solicitadas: {redes_str}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{
+  "roteiro": {{
+    "titulo_conteudo": "título interno para ClickUp",
+    "gancho": "texto exato da capa — máx 7 palavras",
+    "slides": [
+      {{"numero": 1, "texto_principal": "capa — máx 7 palavras", "subtexto": "opcional", "visual": "descrição"}},
+      {{"numero": 2, "texto_principal": "insight — máx 7 palavras", "subtexto": null, "visual": "descrição"}}
+    ],
+    "palavras_chave_visuais": ["visual1", "visual2", "visual3"]
+  }},
+{copy_schema},
+  "briefing": {{
+{briefing_base},
+    "slides": [
+      {{"numero": 1, "texto_principal": "máx 7 palavras", "subtexto": null, "visual": "descrição precisa", "notas": null}}
+    ]
+  }}
+}}"""
+
+    # reels / story
+    return f"""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SAÍDA — JSON VÁLIDO ÚNICO, SEM MARKDOWN
+Gere APENAS as chaves de redes solicitadas: {redes_str}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{{
+  "roteiro": {{
+    "titulo_conteudo": "título interno para ClickUp",
+    "gancho": "texto exato dos primeiros 3s",
+    "roteiro_completo": "roteiro linha a linha com marcação [0s] [5s] [15s]...",
+    "notas_edicao": "instruções para editor: cortes, texto na tela, música",
+    "duracao_estimada": "{duracao}",
+    "palavras_chave_visuais": ["visual1", "visual2", "visual3"]
+  }},
+{copy_schema},
+  "briefing": {{
+{briefing_base},
+    "slides": [
+      {{"numero": 1, "texto_principal": "capa — máx 7 palavras", "subtexto": null, "visual": "descrição precisa", "notas": null}}
+    ]
+  }}
+}}"""
+
 
 # ─── Prompt único: Roteiro + Copy + Briefing ────────────────────────────────
 
@@ -351,9 +507,10 @@ def build_prompt_all(ctx: dict) -> str:
     num_slides = {"reels": "1 (capa)", "story": "3–5 frames", "card": "1", "carrossel": "5–8 slides"}.get(formato, "1")
 
     gancho_instrucao = (
-        f'\nGancho pré-definido (use como abertura exata): "{gancho}"'
+        f'\nGancho sugerido (use como referência de tom e ângulo, mas adapte para que sirva o TEMA exato acima): "{gancho}"'
+        f'\nATENÇÃO: se o gancho falar de um assunto diferente do Tema, reescreva-o pra que convirja pro Tema. O gancho é a entrada do post, não um post paralelo.'
         if gancho else
-        "\nCrie um gancho original seguindo a Regra dos 3 Segundos."
+        "\nCrie um gancho original seguindo a Regra dos 3 Segundos, diretamente conectado ao Tema."
     )
 
     redes_copy = "\n".join(f'- {r.capitalize()}: {_copy_rede_desc(r)}' for r in redes)
@@ -363,7 +520,18 @@ def build_prompt_all(ctx: dict) -> str:
 
     produto_section = PRODUTO if funil in ("mofu", "bofu") else ""
 
-    return f"""Você é estrategista de conteúdo para redes sociais da marca Salão 365°.
+    secao_conteudo = _secao_conteudo(formato)
+    schema_saida   = _schema_saida(formato, redes, duracao, dimensoes, logo_val, logo_pos)
+
+    # Para card: gancho_instrucao não vai no visual — só orienta a legenda
+    if formato == "card":
+        gancho_instrucao = (
+            f'\nGancho sugerido para a LEGENDA (não vai no visual do card): "{gancho}"'
+            if gancho else
+            "\nCrie um gancho original para a primeira linha da LEGENDA, conectado ao Tema."
+        )
+
+    return f"""Você é estrategista de conteúdo para redes sociais da marca Salão 365.
 Gere os 3 entregáveis abaixo de uma vez: ROTEIRO + COPY + BRIEFING DE DESIGN.
 Escreva com a voz de um colega experiente — direto, sem enrolação.
 
@@ -381,12 +549,7 @@ Dimensões: {dimensoes}{gancho_instrucao}
 
 {REGRAS_BASE}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-REGRAS DE ROTEIRO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- GANCHO (3s): número impactante, erro comum ou promessa direta. PROIBIDO: "Oi gente", "Hoje vou falar".
-- Cada frase deve ensinar, provocar ou avançar. Elimine preenchimento.
-- Estrutura: Reels GANCHO→PROBLEMA→SOLUÇÃO→CTA | Carrossel 1 insight/slide | Story 1 ideia/frame | Card título+bullets
+{secao_conteudo}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 REGRAS DE COPY
@@ -394,6 +557,8 @@ REGRAS DE COPY
 Redes: {redes_copy}
 - Primeira linha = gancho (motivo para parar o scroll)
 - Legenda complementa, não repete o roteiro
+- VOZ DIRETA: fale com quem lê em 2ª pessoa. PROIBIDO citar a persona pelo nome ("A Carla...", "A Jessica...") ou descrever ela em 3ª pessoa no início. Comece com "Você...", com um cenário numérico, ou direto no problema.
+- PROIBIDO travessão longo (—) na legenda. Use vírgula, ponto ou dois pontos. Única exceção: seta de CTA →
 - CTA único: TOFU "Salva esse post" | MOFU "Comenta se acontece" | BOFU "→ Link na bio"
 - Hashtags: IG 5–8 (30% nicho pequeno + 40% médio + 30% alcance) | TK 3–5 trend | YT 3–5
 
@@ -406,45 +571,11 @@ REGRAS DE BRIEFING DE DESIGN
 - Tipografia: headline Argent CF Light, corpo General Sans Regular/SemiBold
 - Grid: margens 135px top/bottom, 35px left/right
 - Todo texto do visual deve estar ESCRITO (não "algum título")
-- Máx 7 palavras por texto de slide
+- Máx 7 palavras por texto de slide | CARD: apenas 1 slide no array, com título + bullets no subtexto
 - Elemento squiggle para sublinhar headline se houver espaço
 - PROIBIDO inventar cores/fontes fora do brandbook
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SAÍDA — JSON VÁLIDO ÚNICO, SEM MARKDOWN
-Gere APENAS as chaves de redes solicitadas: {redes}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{{
-  "roteiro": {{
-    "titulo_conteudo": "título interno para ClickUp",
-    "gancho": "texto exato dos primeiros 3s ou slide 1",
-    "roteiro_completo": "roteiro linha a linha com [0s]/[15s] ou [Slide 1]",
-    "notas_edicao": "instruções para editor: cortes, texto na tela, música",
-    "duracao_estimada": "{duracao}",
-    "palavras_chave_visuais": ["visual1", "visual2", "visual3"]
-  }},
-  "copy": {{
-    "instagram": {{"legenda": "texto completo", "hashtags": ["#tag"], "primeira_linha": "gancho"}},
-    "tiktok": {{"legenda": "até 150 chars", "hashtags": ["#tag"]}},
-    "youtube": {{"titulo": "até 60 chars", "descricao": "até 200 chars", "hashtags": ["#tag"]}}
-  }},
-  "briefing": {{
-    "formato": "{formato}",
-    "dimensoes": "{dimensoes}",
-    "paleta": {{"primaria": "#5E4FD3", "secundaria": "#hex", "texto": "#hex", "fundo": "#hex"}},
-    "distribuicao_cor": "60% X + 30% Y + 10% Z",
-    "tipografia": {{"headline": "Argent CF Light — tamanho", "corpo": "General Sans Regular — tamanho"}},
-    "mood": ["palavra1", "palavra2", "palavra3"],
-    "estilo_visual": "descrição em 1 frase",
-    "slides": [{{"numero": 1, "texto_principal": "máx 7 palavras", "subtexto": null, "visual": "descrição precisa", "notas": null}}],
-    "logo_salao365": {logo_val},
-    "logo_posicao": {logo_pos},
-    "elemento_apoio": "padrão ondulado, squiggle, ou nenhum",
-    "margens": "top/bottom 135px, left/right 35px",
-    "proibidos": ["elemento1", "elemento2"],
-    "nota_designer": "instrução global"
-  }}
-}}"""
+{schema_saida}"""
 
 
 def _copy_rede_desc(rede: str) -> str:
@@ -476,11 +607,18 @@ def generate_content(task: dict):
         log.error(f"[Agent] Falha no parse: {e}")
         raise
 
-    script = result.get("roteiro", {})
+    # card usa chave "visual_card"; outros formatos usam "roteiro"
+    if ctx["formato"] == "card":
+        script = result.get("visual_card", {})
+    else:
+        script = result.get("roteiro", {})
     copy   = result.get("copy", {})
     brief  = result.get("briefing", {})
 
-    log.info(f"[Agent] OK. Gancho: {script.get('gancho', '')[:60]}")
+    if ctx["formato"] == "card":
+        log.info(f"[Agent] OK. Headline: {script.get('headline', '')[:60]}")
+    else:
+        log.info(f"[Agent] OK. Gancho: {script.get('gancho', '')[:60]}")
 
     _save_deliverables(task_id, script, copy, brief, ctx)
     log.info(f"[Agent] ✓ Todos os entregáveis salvos na task {task_id}")
@@ -500,17 +638,41 @@ def _save_deliverables(
 
 def _format_description(script: dict, copy: dict, brief: dict, ctx: dict) -> str:
     """Formata os entregáveis como Markdown legível na descrição do ClickUp."""
-    redes = ctx["redes"]
+    redes   = ctx["redes"]
+    formato = ctx.get("formato", "reels")
     sections = []
 
-    # ── Roteiro ──
-    sections.append(f"## 🎬 Roteiro — {script.get('titulo_conteudo', ctx['tema'])}")
-    sections.append(f"**Gancho:** {script.get('gancho', '')}")
-    sections.append(f"**Duração:** {script.get('duracao_estimada', 'N/A')}")
-    sections.append(f"\n{script.get('roteiro_completo', '')}")
-    sections.append(f"\n**Notas de edição:** {script.get('notas_edicao', '')}")
-    if script.get("palavras_chave_visuais"):
-        sections.append(f"**Palavras-chave visuais:** {', '.join(script['palavras_chave_visuais'])}")
+    # ── Conteúdo principal (format-specific) ──
+    if formato == "card":
+        sections.append(f"## 🖼️ Visual do Card — {ctx['tema']}")
+        headline = script.get("headline", "")
+        bullets  = script.get("bullets", [])
+        sections.append(f"**Headline:** {headline}")
+        for i, b in enumerate(bullets, 1):
+            sections.append(f"• {b}")
+        if script.get("palavras_chave_visuais"):
+            sections.append(f"\n**Palavras-chave visuais:** {', '.join(script['palavras_chave_visuais'])}")
+    elif formato == "carrossel":
+        sections.append(f"## 🎠 Carrossel — {script.get('titulo_conteudo', ctx['tema'])}")
+        sections.append(f"**Gancho (capa):** {script.get('gancho', '')}")
+        for slide in script.get("slides", []):
+            n = slide.get("numero", "?")
+            txt = slide.get("texto_principal", "")
+            sub = slide.get("subtexto", "")
+            sections.append(f"\n**[Slide {n}]** {txt}")
+            if sub:
+                sections.append(sub)
+        if script.get("palavras_chave_visuais"):
+            sections.append(f"\n**Palavras-chave visuais:** {', '.join(script['palavras_chave_visuais'])}")
+    else:
+        # reels / story
+        sections.append(f"## 🎬 Roteiro — {script.get('titulo_conteudo', ctx['tema'])}")
+        sections.append(f"**Gancho:** {script.get('gancho', '')}")
+        sections.append(f"**Duração:** {script.get('duracao_estimada', 'N/A')}")
+        sections.append(f"\n{script.get('roteiro_completo', '')}")
+        sections.append(f"\n**Notas de edição:** {script.get('notas_edicao', '')}")
+        if script.get("palavras_chave_visuais"):
+            sections.append(f"**Palavras-chave visuais:** {', '.join(script['palavras_chave_visuais'])}")
 
     # ── Copy / Legendas ──
     sections.append("\n---\n## ✍️ Copy / Legendas")
@@ -556,24 +718,34 @@ def _format_description(script: dict, copy: dict, brief: dict, ctx: dict) -> str
     if brief.get("margens"):
         sections.append(f"**Margens:** {brief['margens']}")
 
-    sections.append(f"\n**Slides:**")
-    for slide in brief.get("slides", []):
-        sections.append(f"\n**[Slide {slide.get('numero', '?')}]** {slide.get('texto_principal', '')}")
-        if slide.get("subtexto"):
-            sections.append(f"Subtexto: {slide['subtexto']}")
-        sections.append(f"Visual: {slide.get('visual', '')}")
-        if slide.get("notas"):
-            sections.append(f"Notas: {slide['notas']}")
+    if formato == "card":
+        layout = brief.get("layout_card", {})
+        if layout:
+            sections.append(f"\n**Layout do Card:**")
+            sections.append(f"Headline: {layout.get('headline', '')}")
+            sections.append(f"Bullets: {layout.get('bullets_texto', '')}")
+            sections.append(f"Visual: {layout.get('visual', '')}")
+            if layout.get("notas"):
+                sections.append(f"Notas: {layout['notas']}")
+    else:
+        sections.append(f"\n**Slides:**")
+        for slide in brief.get("slides", []):
+            sections.append(f"\n**[Slide {slide.get('numero', '?')}]** {slide.get('texto_principal', '')}")
+            if slide.get("subtexto"):
+                sections.append(f"Subtexto: {slide['subtexto']}")
+            sections.append(f"Visual: {slide.get('visual', '')}")
+            if slide.get("notas"):
+                sections.append(f"Notas: {slide['notas']}")
 
     if brief.get("elemento_apoio"):
         sections.append(f"\n**Elemento de apoio:** {brief['elemento_apoio']}")
     if brief.get("logo_salao365"):
-        sections.append(f"**Logo Salão 365°:** {brief.get('logo_posicao', 'inferior, 20px')}")
+        sections.append(f"**Logo Salão 365:** {brief.get('logo_posicao', 'inferior, 20px')}")
     sections.append(f"**Proibidos:** {', '.join(brief.get('proibidos', []))}")
     if brief.get("nota_designer"):
         sections.append(f"**Nota ao designer:** {brief['nota_designer']}")
 
-    sections.append("\n---\n_Gerado pelo Social Agent · Salão 365°_")
+    sections.append("\n---\n_Gerado pelo Social Agent · Salão 365_")
 
     return "\n".join(sections)
 

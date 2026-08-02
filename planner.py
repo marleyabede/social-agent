@@ -1,5 +1,5 @@
 """
-planner.py — Planejador semanal autônomo do Social Agent · Salão 365°
+planner.py — Planejador semanal autônomo do Social Agent · Salão 365
 Roda toda segunda-feira às 09h BRT via scheduler.py
 Cria cards no ClickUp com todos os campos preenchidos.
 """
@@ -117,7 +117,7 @@ YOUR_TOPICS = [
     ("C-B02", "carla",   "bofu", "Como escolher um sistema para salão sem se arrepender em 3 meses","reels",     ["instagram"], "erro"),
     ("C-B03", "carla",   "bofu", "5 recursos que toda dona de salão precisa no sistema de agendamento","card",   ["instagram"], "numero"),
     ("C-B04", "carla",   "bofu", "Quanto tempo você recupera por semana com agendamento automático","story",     ["instagram"], "numero"),
-    ("C-B05", "carla",   "bofu", "Como o Salão 365° resolve os 3 maiores problemas do salão pequeno","reels",   ["instagram"], "promessa"),
+    ("C-B05", "carla",   "bofu", "Como o Salão 365 resolve os 3 maiores problemas do salão pequeno","reels",   ["instagram"], "promessa"),
     # ── LÉO · TOFU ───────────────────────────────────────────────────────────
     ("L-T01", "leo",     "tofu", "Quanto fatura uma barbearia por mês — referências reais por porte","reels",   ["instagram"], "numero"),
     ("L-T02", "leo",     "tofu", "A rotina real de um dono de barbearia que está crescendo",         "reels",     ["instagram"], "promessa"),
@@ -137,10 +137,10 @@ YOUR_TOPICS = [
     ("L-M07", "leo",     "mofu", "Como treinar barbeiro novo sem parar a produção do dia",           "reels",     ["instagram"], "erro"),
     # ── LÉO · BOFU ───────────────────────────────────────────────────────────
     ("L-B01", "leo",     "bofu", "Melhor sistema para barbearia em 2026 — o que avaliar antes de escolher","carrossel",["instagram"], "numero"),
-    ("L-B02", "leo",     "bofu", "Como o Salão 365° funciona para barbearia com mais de 1 barbeiro", "reels",     ["instagram"], "promessa"),
+    ("L-B02", "leo",     "bofu", "Como o Salão 365 funciona para barbearia com mais de 1 barbeiro", "reels",     ["instagram"], "promessa"),
     ("L-B03", "leo",     "bofu", "Quanto uma barbearia economiza por mês com sistema de gestão",     "card",      ["instagram"], "numero"),
     ("L-B04", "leo",     "bofu", "Checklist: sua barbearia está pronta para escalar?",               "story",     ["instagram"], "erro"),
-    ("L-B05", "leo",     "bofu", "Migrar de app para o Salão 365°: quanto tempo leva e como fazer",  "reels",     ["instagram"], "dor"),
+    ("L-B05", "leo",     "bofu", "Migrar de app para o Salão 365: quanto tempo leva e como fazer",  "reels",     ["instagram"], "dor"),
     # ── ANA · TOFU ───────────────────────────────────────────────────────────
     ("A-T01", "ana",     "tofu", "Quanto uma lash designer perde por mês com agenda desorganizada", "reels",     ["instagram"], "numero"),
     ("A-T02", "ana",     "tofu", "A rotina real de uma lash designer autônoma no dia a dia",         "reels",     ["instagram"], "promessa"),
@@ -284,7 +284,7 @@ def suggest_topic_via_claude(
     funil_desc = {
         "tofu": "topo de funil — ainda não percebeu que precisa de sistema (conteúdo educativo/identificação)",
         "mofu": "meio de funil — consciente do problema, buscando solução",
-        "bofu": "fundo de funil — considerando um app de gestão (CTA direto para Salão 365°)",
+        "bofu": "fundo de funil — considerando um app de gestão (CTA direto para Salão 365)",
     }
 
     used_str = "\n".join(f"- {t}" for t in used_themes[-20:]) if used_themes else "nenhum ainda"

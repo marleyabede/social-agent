@@ -1,5 +1,5 @@
 """
-publisher.py — Motor de publicação do Social Agent · Salão 365°
+publisher.py — Motor de publicação do Social Agent · Salão 365
 Chamado pelo scheduler.py quando card entra em PRONTO_PUBLICAR.
 
 Função pública (contrato com scheduler.py):

@@ -1,5 +1,5 @@
 """
-notify.py — Notificações por e-mail do Social Agent · Salão 365°
+notify.py — Notificações por e-mail do Social Agent · Salão 365
 Usa Resend (API HTTP) — sem dependência de porta SMTP.
 
 Funções públicas:
@@ -86,14 +86,14 @@ def _to_html(subject: str, body: str) -> str:
 <body style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#222;max-width:600px;margin:0 auto;padding:24px">
   <div style="background:#11111c;border-radius:8px;padding:16px 20px;margin-bottom:20px">
     <span style="color:#7b6ef6;font-weight:700;font-size:16px">Social Agent</span>
-    <span style="color:#6a6a85;font-size:12px;margin-left:12px">Salão 365°</span>
+    <span style="color:#6a6a85;font-size:12px;margin-left:12px">Salão 365</span>
   </div>
   <h2 style="color:#11111c;font-size:18px;margin:0 0 16px">{subject}</h2>
   <div style="line-height:1.6">
     {"".join(lines_html)}
   </div>
   <div style="margin-top:24px;padding-top:16px;border-top:1px solid #e0e0e0;color:#999;font-size:12px">
-    Enviado em {now_str} BRT · Social Agent · Salão 365°
+    Enviado em {now_str} BRT · Social Agent · Salão 365
   </div>
 </body>
 </html>"""

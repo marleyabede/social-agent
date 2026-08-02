@@ -1,4 +1,4 @@
-# Social Agent — Salão 365°
+# Social Agent — Salão 365
 
 ## O que é este projeto
 Agente Python que planeja, gera e publica conteúdo de redes sociais automaticamente.
@@ -87,8 +87,8 @@ Dores por persona:
 - leo:     fidelização (alta concorrência), precificação/comissão, controle de caixa
 
 ## Funil
-- tofu — topo: educativo, não cita Salão 365° diretamente
-- mofu — meio: consciente do problema, introduz Salão 365° (máx 2x)
+- tofu — topo: educativo, não cita Salão 365 diretamente
+- mofu — meio: consciente do problema, introduz Salão 365 (máx 2x)
 - bofu — fundo: considerando app, CTA direto para app.salao365.com
 
 ## Formatos e redes (MVP — apenas Instagram)
