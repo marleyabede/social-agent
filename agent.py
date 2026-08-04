@@ -352,11 +352,17 @@ VISUAL DO CARD (card não é vídeo — não tem roteiro, não tem gancho, não 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Card = 1 imagem estática. Todo o conteúdo visual cabe numa única tela de celular de uma vez.
 
+ORÇAMENTO DE TEXTO (limite rígido, não é sugestão):
+  HEADLINE: máx 7 palavras / 50 caracteres
+  BULLET:   máx 6 palavras / 40 caracteres cada
+  TOTAL do card: nunca passar de 200 caracteres somando tudo
+Se não cabe nesse orçamento, corte conteúdo. Nunca reduza fonte nem margem.
+
 Estrutura obrigatória do visual (exatamente isso, nada mais):
-  HEADLINE: [resposta direta ao tema — máx 7 palavras]
-  • BULLET 1: [verbo imperativo ou número — máx 6 palavras]
-  • BULLET 2: [verbo imperativo ou número — máx 6 palavras]
-  • BULLET 3: [verbo imperativo ou número — máx 6 palavras]
+  HEADLINE: [resposta direta ao tema — máx 7 palavras / 50 chars]
+  • BULLET 1: [verbo imperativo ou número — máx 6 palavras / 40 chars]
+  • BULLET 2: [verbo imperativo ou número — máx 6 palavras / 40 chars]
+  • BULLET 3: [verbo imperativo ou número — máx 6 palavras / 40 chars]
   (• BULLET 4: opcional, só se absolutamente necessário)
 
 Regras dos bullets:
@@ -370,14 +376,31 @@ O GANCHO vai na primeira linha da LEGENDA (seção copy), não no visual."""
 
     if formato == "carrossel":
         return """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-REGRAS DE ROTEIRO — CARROSSEL
+REGRAS DE CARROSSEL — CADA SLIDE É UM CARD
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- COERÊNCIA TEMÁTICA: todos os slides respondem ao Tema. PROIBIDO misturar dois assuntos.
-- Estrutura: [Slide 1] Capa/Gancho → [Slides 2–N] 1 insight por slide → [Último slide] CTA
-- Capa: headline forte (máx 7 palavras) + gancho que tease o conteúdo
-- Slides intermediários: 1 ideia por slide, máx 2 frases curtas
-- Último slide: CTA direto, fundo roxo (#5E4FD3) para contraste
-- GANCHO SERVE O TEMA: o gancho anuncia exatamente o que o carrossel entrega"""
+Carrossel = sequência de cards de 1080×1350px. CADA SLIDE tem a MESMA limitação
+física de um card único: é lido numa tela de celular, de relance, com o polegar
+pronto pra deslizar. Texto que não cabe confortável não é lido, é pulado.
+
+ORÇAMENTO DE TEXTO POR SLIDE (limite rígido, não é sugestão):
+  HEADLINE:  máx 7 palavras / 50 caracteres  (2 linhas em Argent CF 56px)
+  SUBTEXTO:  máx 18 palavras / 120 caracteres (2–3 linhas em General Sans 24px)
+  TOTAL do slide: nunca passar de 170 caracteres somando headline + subtexto
+
+Se a ideia não cabe nesse orçamento, ela vira DOIS slides. Nunca comprima
+fonte, nunca reduza margem, nunca encha o slide. Slide cheio = slide pulado.
+
+ESTRUTURA:
+  [Slide 1]      Capa: headline forte + 1 linha de promessa
+  [Slides 2–N]   1 ideia por slide, headline + subtexto dentro do orçamento
+  [Último slide] CTA direto, fundo roxo (#5E4FD3), máx 2 linhas
+
+REGRAS:
+- COERÊNCIA TEMÁTICA: todos os slides respondem ao Tema. PROIBIDO misturar assuntos.
+- 1 ideia por slide. Duas ideias no mesmo slide = divida em dois.
+- Números e valores fechados ganham slide próprio, com o número dominando o visual.
+- GANCHO SERVE O TEMA: a capa anuncia exatamente o que o carrossel entrega.
+- Total de slides: 5–8. Menos que 5 é raso, mais que 8 ninguém termina."""
 
     # reels / story
     return """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -388,7 +411,12 @@ REGRAS DE ROTEIRO — VÍDEO
 - GANCHO SERVE O TEMA: o gancho tease a resposta do Tema. Gancho desconectado = promessa falsa.
 - Cada frase deve ensinar, provocar ou avançar. Elimine preenchimento.
 - Estrutura Reels: [0s] GANCHO → [5s] PROBLEMA → [15s] SOLUÇÃO passo a passo → [50s] CTA
-- Estrutura Story: 1 ideia por frame, 3–5 frames, CTA no último"""
+- Estrutura Story: 1 ideia por frame, 3–5 frames, CTA no último
+- TEXTO NA TELA (story/reels): cada frame é lido em 3–6 segundos. Orçamento rígido:
+    headline do frame  máx 7 palavras / 50 caracteres
+    subtexto do frame  máx 15 palavras / 100 caracteres
+  Texto que não cabe nesse orçamento vira NARRAÇÃO, não texto na tela.
+  Frame lotado de texto ninguém lê, todo mundo pula."""
 
 
 def _schema_saida(formato: str, redes: list, duracao: str, dimensoes: str,
@@ -451,10 +479,10 @@ Gere APENAS as chaves de redes solicitadas: {redes_str}
 {{
   "roteiro": {{
     "titulo_conteudo": "título interno para ClickUp",
-    "gancho": "texto exato da capa — máx 7 palavras",
+    "gancho": "texto exato da capa — máx 7 palavras / 50 chars",
     "slides": [
-      {{"numero": 1, "texto_principal": "capa — máx 7 palavras", "subtexto": "opcional", "visual": "descrição"}},
-      {{"numero": 2, "texto_principal": "insight — máx 7 palavras", "subtexto": null, "visual": "descrição"}}
+      {{"numero": 1, "texto_principal": "capa — máx 7 palavras / 50 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
+      {{"numero": 2, "texto_principal": "insight — máx 7 palavras / 50 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}}
     ],
     "palavras_chave_visuais": ["visual1", "visual2", "visual3"]
   }},
@@ -571,7 +599,13 @@ REGRAS DE BRIEFING DE DESIGN
 - Tipografia: headline Argent CF Light, corpo General Sans Regular/SemiBold
 - Grid: margens 135px top/bottom, 35px left/right
 - Todo texto do visual deve estar ESCRITO (não "algum título")
-- Máx 7 palavras por texto de slide | CARD: apenas 1 slide no array, com título + bullets no subtexto
+- ORÇAMENTO DE TEXTO POR SLIDE (rígido, vale para texto_principal E subtexto):
+    texto_principal  máx 7 palavras / 50 caracteres
+    subtexto         máx 18 palavras / 120 caracteres
+    total do slide   máx 170 caracteres
+  Antes de escrever cada slide, CONTE os caracteres. Passou do limite, corte ou divida em dois slides.
+  Slide visualmente lotado é slide pulado. Espaço em branco é parte do design, não desperdício.
+- CARD: apenas 1 slide no array, com título + bullets no subtexto
 - Elemento squiggle para sublinhar headline se houver espaço
 - PROIBIDO inventar cores/fontes fora do brandbook
 - PROIBIDO verde, amarelo ou vermelho em qualquer elemento visual — sem exceção, nem para ícones de check, status ou comparação. Use roxo (#5E4FD3) para positivo e ink (#201E38) para negativo. Ícones de check, seta ou confirmação: sempre #5E4FD3 ou #DFDCF6
