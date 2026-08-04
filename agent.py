@@ -574,6 +574,7 @@ REGRAS DE BRIEFING DE DESIGN
 - Máx 7 palavras por texto de slide | CARD: apenas 1 slide no array, com título + bullets no subtexto
 - Elemento squiggle para sublinhar headline se houver espaço
 - PROIBIDO inventar cores/fontes fora do brandbook
+- PROIBIDO verde, amarelo ou vermelho em qualquer elemento visual — sem exceção, nem para ícones de check, status ou comparação. Use roxo (#5E4FD3) para positivo e ink (#201E38) para negativo. Ícones de check, seta ou confirmação: sempre #5E4FD3 ou #DFDCF6
 
 {schema_saida}"""
 
