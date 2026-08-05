@@ -477,9 +477,8 @@ Gere APENAS as chaves de redes solicitadas: {redes_str}
 {{
   "roteiro": {{
     "titulo_conteudo": "título interno para ClickUp",
-    "gancho": "texto exato da capa — máx 7 palavras / 50 chars",
     "slides": [
-      {{"numero": 1, "texto_principal": "capa — máx 7 palavras / 50 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
+      {{"numero": 1, "texto_principal": "CAPA — este slide é o gancho, não repita em outro campo — máx 7 palavras / 50 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
       {{"numero": 2, "texto_principal": "insight — máx 7 palavras / 50 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}}
     ],
     "palavras_chave_visuais": ["visual1", "visual2", "visual3"]
@@ -656,6 +655,9 @@ def generate_content(task: dict):
 
     if ctx["formato"] == "card":
         log.info(f"[Agent] OK. Headline: {script.get('headline', '')[:60]}")
+    elif ctx["formato"] == "carrossel":
+        capa = (script.get("slides") or [{}])[0].get("texto_principal", "")
+        log.info(f"[Agent] OK. Capa: {capa[:60]}")
     else:
         log.info(f"[Agent] OK. Gancho: {script.get('gancho', '')[:60]}")
 
@@ -693,12 +695,12 @@ def _format_description(script: dict, copy: dict, brief: dict, ctx: dict) -> str
             sections.append(f"\n**Palavras-chave visuais:** {', '.join(script['palavras_chave_visuais'])}")
     elif formato == "carrossel":
         sections.append(f"## 🎠 Carrossel — {script.get('titulo_conteudo', ctx['tema'])}")
-        sections.append(f"**Gancho (capa):** {script.get('gancho', '')}")
         for slide in script.get("slides", []):
             n = slide.get("numero", "?")
             txt = slide.get("texto_principal", "")
             sub = slide.get("subtexto", "")
-            sections.append(f"\n**[Slide {n}]** {txt}")
+            rotulo = f"Slide {n} · capa" if n == 1 else f"Slide {n}"
+            sections.append(f"\n**[{rotulo}]** {txt}")
             if sub:
                 sections.append(sub)
         if script.get("palavras_chave_visuais"):
