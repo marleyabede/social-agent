@@ -390,17 +390,33 @@ ORÇAMENTO DE TEXTO POR SLIDE (limite rígido, não é sugestão):
 Se a ideia não cabe nesse orçamento, ela vira DOIS slides. Nunca comprima
 fonte, nunca reduza margem, nunca encha o slide. Slide cheio = slide pulado.
 
-ESTRUTURA:
-  [Slide 1]      Capa: headline forte + 1 linha de promessa
-  [Slides 2–N]   1 ideia por slide, headline + subtexto dentro do orçamento
-  [Último slide] CTA direto, fundo roxo (#5E4FD3), máx 2 linhas
+ARCO NARRATIVO (cada slide tem FUNÇÃO, não é lista de dicas):
+  [Slide 1]  CAPA — a promessa. Headline forte + 1 linha do que a pessoa leva.
+  [Slide 2]  CUSTO — o slide de maior evasão do carrossel. Quem deslizou está
+             testando se vale continuar, então PAGUE O SWIPE AGORA: cenário
+             numérico fechado do prejuízo, ou a primeira entrega concreta.
+             PROIBIDO no slide 2: preparar terreno, contextualizar, "vamos
+             entender", definir conceito. Contexto não segura ninguém.
+  [Slide 3]  VIRADA — o que muda a chave. O erro que quase todo mundo comete,
+             ou o princípio que reorganiza o problema.
+  [Slides 4 a N-2]  PASSOS — a execução, 1 passo por slide, verbo imperativo.
+  [Slide N-1] RECAP — condensa os passos numa lista escaneável. Este é o slide
+             que faz a pessoa SALVAR o post. CTA leve aqui (o penúltimo tem mais
+             intenção que o último, porque muita gente para antes do fim).
+  [Slide N]  CTA — recapitula a promessa em 1 linha + CTA. Fundo roxo (#5E4FD3).
+
+O arco importa mais que a contagem: sair no meio de uma história deixa a pessoa
+incompleta, e é isso que segura o swipe. Lista de dicas soltas não segura,
+porque cada slide se basta e dá pra sair a qualquer momento sem perder nada.
 
 REGRAS:
+- PROMESSA ÚNICA: o carrossel inteiro precisa caber numa frase. Se você não
+  consegue resumir a promessa em 1 linha, tem dois posts aí dentro. Divida.
 - COERÊNCIA TEMÁTICA: todos os slides respondem ao Tema. PROIBIDO misturar assuntos.
 - 1 ideia por slide. Duas ideias no mesmo slide = divida em dois.
 - Números e valores fechados ganham slide próprio, com o número dominando o visual.
 - GANCHO SERVE O TEMA: a capa anuncia exatamente o que o carrossel entrega.
-- Total de slides: 5–8. Menos que 5 é raso, mais que 8 ninguém termina."""
+- Total de slides: 6–8. Menos que 6 não fecha o arco, mais que 8 ninguém termina."""
 
     # reels / story
     return """━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -477,9 +493,14 @@ Gere APENAS as chaves de redes solicitadas: {redes_str}
 {{
   "roteiro": {{
     "titulo_conteudo": "título interno para ClickUp",
+    "promessa_unica": "a promessa do carrossel inteiro em 1 frase — se não couber, o tema tem dois posts dentro",
     "slides": [
-      {{"numero": 1, "texto_principal": "CAPA — este slide é o gancho, não repita em outro campo — máx 7 palavras / 50 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
-      {{"numero": 2, "texto_principal": "insight — máx 7 palavras / 50 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}}
+      {{"numero": 1, "funcao": "capa", "texto_principal": "a promessa — este slide é o gancho, não repita em outro campo — máx 7 palavras / 50 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
+      {{"numero": 2, "funcao": "custo", "texto_principal": "cenário numérico do prejuízo ou 1ª entrega concreta — NUNCA contexto", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
+      {{"numero": 3, "funcao": "virada", "texto_principal": "o erro comum ou o princípio que reorganiza o problema", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
+      {{"numero": 4, "funcao": "passo", "texto_principal": "1 passo, verbo imperativo — máx 7 palavras / 50 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
+      {{"numero": 7, "funcao": "recap", "texto_principal": "os passos condensados em lista escaneável — este slide gera o save", "subtexto": "CTA leve", "visual": "descrição"}},
+      {{"numero": 8, "funcao": "cta", "texto_principal": "promessa em 1 linha + CTA", "subtexto": "máx 2 linhas", "visual": "fundo roxo #5E4FD3"}}
     ],
     "palavras_chave_visuais": ["visual1", "visual2", "visual3"]
   }},
@@ -695,11 +716,14 @@ def _format_description(script: dict, copy: dict, brief: dict, ctx: dict) -> str
             sections.append(f"\n**Palavras-chave visuais:** {', '.join(script['palavras_chave_visuais'])}")
     elif formato == "carrossel":
         sections.append(f"## 🎠 Carrossel — {script.get('titulo_conteudo', ctx['tema'])}")
+        if script.get("promessa_unica"):
+            sections.append(f"**Promessa:** {script['promessa_unica']}")
         for slide in script.get("slides", []):
             n = slide.get("numero", "?")
             txt = slide.get("texto_principal", "")
             sub = slide.get("subtexto", "")
-            rotulo = f"Slide {n} · capa" if n == 1 else f"Slide {n}"
+            funcao = slide.get("funcao") or ("capa" if n == 1 else "")
+            rotulo = f"Slide {n} · {funcao}" if funcao else f"Slide {n}"
             sections.append(f"\n**[{rotulo}]** {txt}")
             if sub:
                 sections.append(sub)
