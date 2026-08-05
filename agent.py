@@ -463,9 +463,7 @@ Gere APENAS as chaves de redes solicitadas: {redes_str}
   "briefing": {{
 {briefing_base},
     "layout_card": {{
-      "headline": "idêntica a visual_card.headline",
-      "bullets_texto": "• bullet1\\n• bullet2\\n• bullet3",
-      "visual": "descrição visual completa do card único",
+      "visual": "tratamento visual do card — fundo, cor, hierarquia, posição do logo. NÃO repita headline nem bullets, já estão em visual_card",
       "notas": "instruções ao designer sobre hierarquia e espaçamento"
     }}
   }}
@@ -490,7 +488,7 @@ Gere APENAS as chaves de redes solicitadas: {redes_str}
   "briefing": {{
 {briefing_base},
     "slides": [
-      {{"numero": 1, "texto_principal": "máx 7 palavras", "subtexto": null, "visual": "descrição precisa", "notas": null}}
+      {{"numero": 1, "visual": "tratamento visual do slide — fundo, cor, hierarquia, ícone. NÃO repita o texto do slide, ele já está em roteiro.slides", "notas": "instrução de execução ao designer, ou null"}}
     ]
   }}
 }}"""
@@ -589,6 +587,8 @@ Redes: {redes_copy}
 - PROIBIDO travessão longo (—) na legenda. Use vírgula, ponto ou dois pontos. Única exceção: seta de CTA →
 - CTA único: TOFU "Salva esse post" | MOFU "Comenta se acontece" | BOFU "→ Link na bio"
 - Hashtags: IG 5–8 (30% nicho pequeno + 40% médio + 30% alcance) | TK 3–5 trend | YT 3–5
+- Hashtags vão APENAS no array "hashtags". PROIBIDO escrevê-las dentro do campo "legenda" —
+  isso duplica o bloco no post final. A legenda termina no CTA.
 
 {BRANDBOOK}
 
@@ -603,8 +603,12 @@ REGRAS DE BRIEFING DE DESIGN
     texto_principal  máx 7 palavras / 50 caracteres
     subtexto         máx 18 palavras / 120 caracteres
     total do slide   máx 170 caracteres
-  Antes de escrever cada slide, CONTE os caracteres. Passou do limite, corte ou divida em dois slides.
+  Os DOIS limites valem ao mesmo tempo: estourar palavras OU caracteres reprova o slide.
+  Conte antes de escrever. Passou do limite, corte ou divida em dois slides.
+  NUNCA escreva a contagem no output. O campo "notas" é instrução de design, não rascunho.
   Slide visualmente lotado é slide pulado. Espaço em branco é parte do design, não desperdício.
+- NÃO repita o texto do slide no briefing. O campo "visual" descreve tratamento (fundo, cor,
+  hierarquia, ícone), nunca o conteúdo textual, que já está na seção de roteiro.
 - CARD: apenas 1 slide no array, com título + bullets no subtexto
 - Elemento squiggle para sublinhar headline se houver espaço
 - PROIBIDO inventar cores/fontes fora do brandbook
@@ -757,11 +761,17 @@ def _format_description(script: dict, copy: dict, brief: dict, ctx: dict) -> str
         layout = brief.get("layout_card", {})
         if layout:
             sections.append(f"\n**Layout do Card:**")
-            sections.append(f"Headline: {layout.get('headline', '')}")
-            sections.append(f"Bullets: {layout.get('bullets_texto', '')}")
             sections.append(f"Visual: {layout.get('visual', '')}")
             if layout.get("notas"):
                 sections.append(f"Notas: {layout['notas']}")
+    elif formato == "carrossel":
+        # texto dos slides já está na seção de roteiro — aqui só o tratamento visual
+        sections.append(f"\n**Tratamento visual por slide:**")
+        for slide in brief.get("slides", []):
+            sections.append(f"\n**[Slide {slide.get('numero', '?')}]**")
+            sections.append(f"Visual: {slide.get('visual', '')}")
+            if slide.get("notas"):
+                sections.append(f"Notas: {slide['notas']}")
     else:
         sections.append(f"\n**Slides:**")
         for slide in brief.get("slides", []):
