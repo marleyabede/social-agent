@@ -409,6 +409,30 @@ O arco importa mais que a contagem: sair no meio de uma história deixa a pessoa
 incompleta, e é isso que segura o swipe. Lista de dicas soltas não segura,
 porque cada slide se basta e dá pra sair a qualquer momento sem perder nada.
 
+CONTINUIDADE ENTRE SLIDES (alternada, ~50/50 — nunca em todos):
+Metade dos slides termina PUXANDO pro próximo (gancho aberto), a outra metade
+FECHA em si mesma. Alternar é o que cria ritmo: gancho aberto em todo slide
+cansa e soa manipulador; slide sempre fechado vira lista solta.
+  - Gancho aberto (~50%): termina em tensão que o próximo slide resolve.
+    Ex.: "Só que tem um detalhe que muda essa conta." / "E aí vem o erro."
+    Cabe bem nos slides de CUSTO e VIRADA, onde a tensão é o conteúdo.
+  - Fechamento (~50%): a ideia se completa no próprio slide, sem dever nada.
+    OBRIGATÓRIO nos slides de PASSO: um passo pela metade frustra quem tenta
+    executar. Também no RECAP e no CTA, que precisam se bastar.
+  - NUNCA dois ganchos abertos seguidos. Alterne.
+
+ELEMENTOS DE RETENÇÃO (descreva no briefing de design):
+- INDICADOR DE PROGRESSO: os slides de passo levam contador discreto no canto
+  ("Passo 2 de 4"), General Sans Regular 18px, cor de menor contraste da paleta.
+  Saber o tamanho do compromisso reduz abandono. Nunca competir com a headline.
+- AFFORDANCE DE SWIPE NA CAPA: o indicador nativo do Instagram é fraco. A capa
+  precisa de sinal visual de que há mais: seta → no canto inferior direito em
+  #5E4FD3, ou o recorte do slide 2 aparecendo na borda direita. Escolha um, não
+  os dois.
+- LEGIBILIDADE EM MINIATURA: a capa aparece no grid e no feed em escala reduzida.
+  A headline da capa precisa ser legível a 1/3 do tamanho, então ela tem
+  orçamento MAIS APERTADO que os demais slides: máx 5 palavras / 35 caracteres.
+
 REGRAS:
 - PROMESSA ÚNICA: o carrossel inteiro precisa caber numa frase. Se você não
   consegue resumir a promessa em 1 linha, tem dois posts aí dentro. Divida.
@@ -495,13 +519,14 @@ Gere APENAS as chaves de redes solicitadas: {redes_str}
     "titulo_conteudo": "título interno para ClickUp",
     "promessa_unica": "a promessa do carrossel inteiro em 1 frase — se não couber, o tema tem dois posts dentro",
     "slides": [
-      {{"numero": 1, "funcao": "capa", "texto_principal": "a promessa — este slide é o gancho, não repita em outro campo — máx 7 palavras / 50 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
-      {{"numero": 2, "funcao": "custo", "texto_principal": "cenário numérico do prejuízo ou 1ª entrega concreta — NUNCA contexto", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
-      {{"numero": 3, "funcao": "virada", "texto_principal": "o erro comum ou o princípio que reorganiza o problema", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
-      {{"numero": 4, "funcao": "passo", "texto_principal": "1 passo, verbo imperativo — máx 7 palavras / 50 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
-      {{"numero": 7, "funcao": "recap", "texto_principal": "os passos condensados em lista escaneável — este slide gera o save", "subtexto": "CTA leve", "visual": "descrição"}},
-      {{"numero": 8, "funcao": "cta", "texto_principal": "promessa em 1 linha + CTA", "subtexto": "máx 2 linhas", "visual": "fundo roxo #5E4FD3"}}
+      {{"numero": 1, "funcao": "capa", "fecho": "aberto", "texto_principal": "a promessa — legível em miniatura, máx 5 palavras / 35 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição + affordance de swipe"}},
+      {{"numero": 2, "funcao": "custo", "fecho": "aberto", "texto_principal": "cenário numérico do prejuízo ou 1ª entrega concreta — NUNCA contexto", "subtexto": "termina puxando pro próximo", "visual": "descrição"}},
+      {{"numero": 3, "funcao": "virada", "fecho": "fechado", "texto_principal": "o erro comum ou o princípio que reorganiza o problema", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição"}},
+      {{"numero": 4, "funcao": "passo", "fecho": "fechado", "texto_principal": "1 passo, verbo imperativo — máx 7 palavras / 50 chars", "subtexto": "máx 18 palavras / 120 chars", "visual": "descrição + contador 'Passo 1 de N'"}},
+      {{"numero": 7, "funcao": "recap", "fecho": "fechado", "texto_principal": "os passos condensados em lista escaneável — este slide gera o save", "subtexto": "CTA leve", "visual": "descrição"}},
+      {{"numero": 8, "funcao": "cta", "fecho": "fechado", "texto_principal": "promessa em 1 linha + CTA", "subtexto": "máx 2 linhas", "visual": "fundo roxo #5E4FD3"}}
     ],
+    "COMO USAR fecho": "aberto = termina em tensão que o próximo slide resolve; fechado = a ideia se completa no slide. Alterne ~50/50, nunca dois abertos seguidos. Slides de passo, recap e cta são SEMPRE fechados.",
     "palavras_chave_visuais": ["visual1", "visual2", "visual3"]
   }},
 {copy_schema},
@@ -718,12 +743,16 @@ def _format_description(script: dict, copy: dict, brief: dict, ctx: dict) -> str
         sections.append(f"## 🎠 Carrossel — {script.get('titulo_conteudo', ctx['tema'])}")
         if script.get("promessa_unica"):
             sections.append(f"**Promessa:** {script['promessa_unica']}")
+        if any(s.get("fecho") == "aberto" for s in script.get("slides", [])):
+            sections.append("_↗ = slide termina puxando pro próximo_")
         for slide in script.get("slides", []):
             n = slide.get("numero", "?")
             txt = slide.get("texto_principal", "")
             sub = slide.get("subtexto", "")
             funcao = slide.get("funcao") or ("capa" if n == 1 else "")
             rotulo = f"Slide {n} · {funcao}" if funcao else f"Slide {n}"
+            if slide.get("fecho") == "aberto":
+                rotulo += " ↗"
             sections.append(f"\n**[{rotulo}]** {txt}")
             if sub:
                 sections.append(sub)
