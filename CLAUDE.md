@@ -62,7 +62,9 @@ Campos de saída (salvos pelo agent):
   CF_ROTEIRO, CF_COPY_IG, CF_COPY_TK, CF_COPY_YT, CF_BRIEFING
 
 Campo do designer (preenchido manualmente antes da publicação):
-  CF_MEDIA_URL — URL pública do asset aprovado (vídeo ou imagem)
+  CF_MEDIA_URL — card/story/reels: URL pública do arquivo
+                 carrossel: URL da PASTA pública do Drive com 1 arquivo por slide,
+                 nomeados slide-1, slide-2... (a ordem vem do nome do arquivo)
 
 ## Endpoints do web server
 ```

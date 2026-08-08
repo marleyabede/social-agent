@@ -19,6 +19,7 @@ O campo CF_MEDIA_URL do ClickUp deve conter a URL do arquivo após o designer fa
 """
 
 import os
+import re
 import json
 import time
 import logging
@@ -57,6 +58,9 @@ CF_FORMATO   = os.environ.get("CF_FORMATO",   "PREENCHER")
 CF_REDES     = os.environ.get("CF_REDES",     "PREENCHER")
 CF_MEDIA_URL = os.environ.get("CF_MEDIA_URL", "PREENCHER")   # URL do asset aprovado
 
+# Google Drive — para carrossel, o designer entrega uma pasta pública com os slides
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
+
 # ─── Helpers gerais ───────────────────────────────────────────────────────────
 
 def cu_headers() -> dict:
@@ -82,8 +86,98 @@ def parse_cf_json(task: dict, field_id: str) -> dict:
 
 
 def parse_redes(raw: str) -> list[str]:
-    import re
     return [r.strip().lower() for r in re.split(r"[,\s]+", raw) if r.strip()]
+
+
+# ─── Google Drive — pasta pública com os slides do carrossel ─────────────────
+#
+# Card, story e reels = 1 arquivo, o designer cola o link do arquivo.
+# Carrossel = N slides, o designer cola o link da PASTA e a ordem vem do nome
+# do arquivo (slide-1.png, slide-2.png...).
+
+_DRIVE_FOLDER_RE = re.compile(r"drive\.google\.com/drive/(?:u/\d+/)?folders/([\w-]+)")
+_DRIVE_FILE_RE   = re.compile(r"drive\.google\.com/file/d/([\w-]+)")
+_DRIVE_ID_PARAM  = re.compile(r"[?&]id=([\w-]+)")
+
+
+def _drive_direct_url(file_id: str) -> str:
+    """URL que serve os bytes da imagem. O link de compartilhamento devolve HTML."""
+    return f"https://lh3.googleusercontent.com/d/{file_id}"
+
+
+def _natural_key(nome: str) -> list:
+    """Ordena slide-2 antes de slide-10 (ordem numérica, não alfabética)."""
+    return [int(p) if p.isdigit() else p.lower() for p in re.split(r"(\d+)", nome)]
+
+
+def is_drive_folder(url: str) -> bool:
+    return bool(_DRIVE_FOLDER_RE.search(url or ""))
+
+
+def normalize_media_url(url: str) -> str:
+    """Converte link de compartilhamento de arquivo do Drive em URL direta."""
+    url = (url or "").strip()
+    m = _DRIVE_FILE_RE.search(url) or _DRIVE_ID_PARAM.search(url)
+    if m and "drive.google.com" in url:
+        return _drive_direct_url(m.group(1))
+    return url
+
+
+def drive_folder_images(folder_url: str) -> list[str]:
+    """
+    Lista as imagens de uma pasta pública do Drive, em ordem de nome.
+    Requer GOOGLE_API_KEY e a pasta compartilhada como 'qualquer pessoa com o link'.
+    """
+    m = _DRIVE_FOLDER_RE.search(folder_url)
+    if not m:
+        raise ValueError(f"Não é um link de pasta do Drive: {folder_url}")
+    if not GOOGLE_API_KEY:
+        raise EnvironmentError(
+            "GOOGLE_API_KEY não configurada. É obrigatória para publicar carrossel "
+            "a partir de uma pasta do Google Drive."
+        )
+
+    folder_id = m.group(1)
+    log.info(f"[Drive] Listando imagens da pasta {folder_id}...")
+
+    resp = requests.get(
+        "https://www.googleapis.com/drive/v3/files",
+        params={
+            "q":       f"'{folder_id}' in parents and mimeType contains 'image/' and trashed = false",
+            "key":     GOOGLE_API_KEY,
+            "fields":  "files(id,name)",
+            "pageSize": 100,
+        },
+        timeout=30,
+    )
+    if not resp.ok:
+        raise RuntimeError(
+            f"Drive API erro {resp.status_code} ao listar a pasta: {resp.text[:200]}. "
+            "Confirme que a pasta está compartilhada como 'qualquer pessoa com o link'."
+        )
+
+    arquivos = resp.json().get("files", [])
+    if not arquivos:
+        raise RuntimeError(
+            f"Nenhuma imagem encontrada na pasta {folder_id}. "
+            "Confirme que os slides foram enviados e que a pasta é pública."
+        )
+
+    arquivos.sort(key=lambda f: _natural_key(f.get("name", "")))
+    nomes = ", ".join(f["name"] for f in arquivos)
+    log.info(f"[Drive] {len(arquivos)} slides na ordem: {nomes}")
+
+    return [_drive_direct_url(f["id"]) for f in arquivos]
+
+
+def resolve_media_urls(media_url: str, formato: str) -> list[str]:
+    """
+    Devolve a lista de URLs de mídia prontas para a API da rede.
+    Carrossel a partir de pasta do Drive vira N URLs; o resto vira 1.
+    """
+    if formato == "carrossel" and is_drive_folder(media_url):
+        return drive_folder_images(media_url)
+    return [normalize_media_url(media_url)]
 
 
 # ─── Extração de contexto do card ────────────────────────────────────────────
@@ -148,6 +242,11 @@ def publish_instagram(copy: dict, media_url: str, formato: str) -> dict:
     caption    = f"{legenda}\n\n{hashtags}".strip()
     media_type = FORMATO_IG_MAP.get(formato, "REELS")
 
+    urls = resolve_media_urls(media_url, formato)
+
+    if formato == "carrossel":
+        return _publish_ig_carousel(caption, urls, base)
+
     log.info(f"[Instagram] Criando container ({media_type})...")
 
     # 1. Criar container de mídia
@@ -160,11 +259,11 @@ def publish_instagram(copy: dict, media_url: str, formato: str) -> dict:
 
     if is_video:
         container_params["media_type"] = media_type
-        container_params["video_url"]  = media_url
+        container_params["video_url"]  = urls[0]
         if formato == "reels":
             container_params["share_to_feed"] = "true"
     else:
-        container_params["image_url"]  = media_url
+        container_params["image_url"]  = urls[0]
         container_params["media_type"] = media_type
 
     resp = requests.post(
@@ -193,6 +292,61 @@ def publish_instagram(copy: dict, media_url: str, formato: str) -> dict:
     # 4. Busca permalink
     permalink = _get_ig_permalink(media_id, base)
     log.info(f"[Instagram] ✓ Publicado: {permalink}")
+    return {"url": permalink, "id": media_id}
+
+
+def _publish_ig_carousel(caption: str, urls: list[str], base: str) -> dict:
+    """
+    Carrossel exige 1 container filho por imagem, depois um container pai
+    do tipo CAROUSEL que os agrupa. Limite do Instagram: 2 a 10 imagens.
+    """
+    if not 2 <= len(urls) <= 10:
+        raise ValueError(
+            f"Carrossel precisa de 2 a 10 imagens, encontrei {len(urls)}. "
+            "Ajuste a quantidade de slides na pasta do Drive."
+        )
+
+    log.info(f"[Instagram] Criando {len(urls)} containers filhos do carrossel...")
+    filhos = []
+    for i, url in enumerate(urls, 1):
+        resp = requests.post(
+            f"{base}/{IG_BUSINESS_ID}/media",
+            params={
+                "access_token":     IG_ACCESS_TOKEN,
+                "image_url":        url,
+                "is_carousel_item": "true",
+            },
+            timeout=30,
+        )
+        _check_ig_response(resp, f"criar slide {i} do carrossel")
+        filhos.append(resp.json()["id"])
+        log.info(f"[Instagram] Slide {i}/{len(urls)} OK")
+
+    log.info("[Instagram] Criando container pai do carrossel...")
+    pai = requests.post(
+        f"{base}/{IG_BUSINESS_ID}/media",
+        params={
+            "access_token": IG_ACCESS_TOKEN,
+            "media_type":   "CAROUSEL",
+            "children":     ",".join(filhos),
+            "caption":      caption,
+        },
+        timeout=30,
+    )
+    _check_ig_response(pai, "criar container do carrossel")
+    container_id = pai.json()["id"]
+
+    log.info("[Instagram] Publicando carrossel...")
+    pub = requests.post(
+        f"{base}/{IG_BUSINESS_ID}/media_publish",
+        params={"creation_id": container_id, "access_token": IG_ACCESS_TOKEN},
+        timeout=30,
+    )
+    _check_ig_response(pub, "publicar carrossel")
+    media_id = pub.json()["id"]
+
+    permalink = _get_ig_permalink(media_id, base)
+    log.info(f"[Instagram] ✓ Carrossel publicado ({len(urls)} slides): {permalink}")
     return {"url": permalink, "id": media_id}
 
 
