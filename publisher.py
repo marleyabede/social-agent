@@ -122,6 +122,49 @@ def desc_redes(task: dict) -> list[str]:
     return parse_redes(m.group(1)) if m else []
 
 
+_REDE_LABEL = {"instagram": "Instagram", "tiktok": "TikTok", "youtube": "YouTube"}
+
+
+def copy_from_description(task: dict, rede: str) -> dict:
+    """
+    Lê a copy da seção 'Copy / Legendas' da descrição.
+    Os custom fields de copy ficaram vazios desde que o agent passou a salvar
+    tudo na descrição, então sem isso o post sairia sem legenda nenhuma.
+    """
+    texto = task_text(task)
+    label = _REDE_LABEL.get(rede)
+    if not texto or not label:
+        return {}
+
+    m = re.search(
+        rf"^\**{label}\**\s*$\r?\n(.*?)"
+        rf"(?=^\**(?:Instagram|TikTok|YouTube)\**\s*$|^\s*---\s*$|\Z)",
+        texto, re.I | re.M | re.S,
+    )
+    if not m:
+        return {}
+
+    bloco = m.group(1)
+
+    # "Hashtags: #a #b" sai do corpo e vira lista. Quando a linha não existe,
+    # as hashtags já estão no fim da legenda — deixa como está pra não duplicar.
+    hashtags: list[str] = []
+
+    def _extrai(mm):
+        hashtags.extend(re.findall(r"#[\wÀ-ɏ]+", mm.group(0)))
+        return ""
+
+    bloco = re.sub(r"(?im)^\s*hashtags\s*:.*$", _extrai, bloco)
+
+    # a primeira linha vem repetida como citação ("> gancho"), descarta
+    linhas  = [l for l in bloco.splitlines() if not l.lstrip().startswith(">")]
+    legenda = "\n".join(linhas).strip()
+
+    if not legenda and not hashtags:
+        return {}
+    return {"legenda": legenda, "hashtags": hashtags}
+
+
 # ─── Google Drive — pasta pública com os slides do carrossel ─────────────────
 #
 # Card, story e reels = 1 arquivo, o designer cola o link do arquivo.
@@ -289,9 +332,11 @@ def extract_publish_context(task: dict) -> dict:
     if not media_url:
         media_url = media_url_from_comments(task["id"])
 
-    copy_ig = parse_cf_json(task, CF_COPY_IG)
-    copy_tk = parse_cf_json(task, CF_COPY_TK)
-    copy_yt = parse_cf_json(task, CF_COPY_YT)
+    # descrição primeiro: os CFs de copy estão vazios desde que o agent
+    # passou a salvar os entregáveis na descrição do card
+    copy_ig = copy_from_description(task, "instagram") or parse_cf_json(task, CF_COPY_IG)
+    copy_tk = copy_from_description(task, "tiktok")    or parse_cf_json(task, CF_COPY_TK)
+    copy_yt = copy_from_description(task, "youtube")   or parse_cf_json(task, CF_COPY_YT)
 
     return {
         "task_id":   task["id"],
