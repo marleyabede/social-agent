@@ -287,6 +287,16 @@ def get_task_comments(task_id: str) -> list[dict]:
     return resp.json().get("comments", [])
 
 
+def comentarios_recentes_primeiro(comments: list[dict]) -> list[dict]:
+    """
+    Ordena do mais novo para o mais antigo pelo campo date.
+    A API do ClickUp já devolve nessa ordem, mas o código assumia o contrário e
+    acabava pegando o comentário mais ANTIGO: um link corrigido depois era
+    ignorado em favor do errado. Ordenar explicitamente não depende da API.
+    """
+    return sorted(comments, key=lambda c: int(c.get("date") or 0), reverse=True)
+
+
 def _comment_text(c: dict) -> str:
     txt = c.get("comment_text") or ""
     if txt.strip():
@@ -308,7 +318,7 @@ def media_url_from_comments(task_id: str) -> str:
         return ""
 
     marcados, soltos = [], []
-    for c in reversed(comments):          # mais recente primeiro
+    for c in comentarios_recentes_primeiro(comments):
         txt = _comment_text(c).strip()
         if not txt or txt.startswith("✅"):   # "✅ Publicado: ..." é do bot
             continue

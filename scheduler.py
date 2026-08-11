@@ -102,6 +102,18 @@ def get_task_comments(task_id: str) -> list[dict]:
     return resp.json().get("comments", [])
 
 
+def ultimo_comentario(comments: list[dict]) -> str:
+    """
+    Texto do comentário MAIS RECENTE. A API do ClickUp devolve do mais novo pro
+    mais antigo, então comments[-1] pegava justamente o mais velho — a revisão
+    lia o primeiro feedback do card em vez do que acabou de ser escrito.
+    """
+    if not comments:
+        return ""
+    mais_novo = max(comments, key=lambda c: int(c.get("date") or 0))
+    return mais_novo.get("comment_text") or ""
+
+
 def get_custom_field(task: dict, field_id: str) -> str | None:
     for cf in task.get("custom_fields", []):
         if cf.get("id") == field_id:
@@ -253,7 +265,7 @@ def process_revisao_copy(task: dict):
             log.warning(f"[Executor] Revisão sem comentário. Ignorando.")
             return
 
-        last_comment = comments[-1]["comment_text"]
+        last_comment = ultimo_comentario(comments)
         log.info(f"[Executor] Comentário de revisão: {last_comment[:100]}")
 
         _, regenerate_item = _import_agent()
@@ -290,7 +302,7 @@ def process_revisao_design(task: dict):
 
     try:
         comments = get_task_comments(task_id)
-        last_comment = comments[-1]["comment_text"] if comments else "(sem comentário)"
+        last_comment = ultimo_comentario(comments) or "(sem comentário)"
 
         notify_success(
             subject=f"[Social Agent] Ajuste de design solicitado",
