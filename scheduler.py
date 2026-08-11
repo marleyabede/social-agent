@@ -196,7 +196,7 @@ STATUS_DESIGN          = "design"
 STATUS_AGUARDA_AP2     = "aguarda_ap2"
 STATUS_REVISAO_DESIGN  = "revisao_design"
 STATUS_PRONTO_PUBLICAR = "pronto_publicar"
-STATUS_PUBLICADO       = "publicado"
+STATUS_PUBLICADO       = os.environ.get("STATUS_PUBLICADO", "complete")
 
 # ─── Importações lazy do agent.py (evita import circular) ────────────────────
 # agent.py será criado na próxima etapa. Aqui definimos o contrato esperado.
@@ -343,10 +343,40 @@ def process_aguarda_ap2(task: dict):
 _publish_fail_notified: dict[str, str] = {}   # task_id -> última falha já notificada
 
 
+MARCA_PUBLICADO = "✅ Publicado:"
+
+
+def link_ja_publicado(task_id: str) -> str:
+    """
+    Link do post se este card já foi publicado. Trava contra republicação:
+    quando o publish dá certo mas o status não muda, o ciclo seguinte acha o
+    card ainda em pronto_publicar e posta de novo.
+    """
+    try:
+        comments = get_task_comments(task_id)
+    except Exception as e:
+        log.warning(f"[Executor] Não consegui ler comentários de {task_id}: {e}")
+        return ""
+    for c in comments:
+        txt = c.get("comment_text") or ""
+        if MARCA_PUBLICADO in txt:
+            return txt.split(MARCA_PUBLICADO, 1)[1].strip()
+    return ""
+
+
 def process_pronto_publicar(task: dict):
-    """PRONTO_PUBLICAR → PUBLICADO: verifica data/hora e publica."""
+    """PRONTO_PUBLICAR → publicado: verifica data/hora e publica."""
     task_id = task["id"]
     log.info(f"[Executor] Verificando publicação: {task['name'][:60]}")
+
+    ja = link_ja_publicado(task_id)
+    if ja:
+        log.warning(f"[Executor] Card já publicado em {ja}. Corrigindo o status, sem republicar.")
+        try:
+            update_task_status(task_id, STATUS_PUBLICADO)
+        except Exception as e:
+            log.error(f"[Executor] Não consegui corrigir o status de {task_id}: {e}")
+        return
 
     due = get_publish_datetime(task)
     now = datetime.now(BRT)
@@ -361,23 +391,6 @@ def process_pronto_publicar(task: dict):
     try:
         publish_post = _import_publisher()
         result = publish_post(task)
-
-        # Salva link do post como comentário no card
-        if result.get("post_url"):
-            _add_comment(task_id, f"✅ Publicado: {result['post_url']}")
-
-        update_task_status(task_id, STATUS_PUBLICADO)
-        _publish_fail_notified.pop(task_id, None)
-        log.info(f"[Executor] Publicado com sucesso: {result.get('post_url', '?')}")
-        notify_success(
-            subject=f"[Social Agent] Post publicado",
-            body=(
-                f"Card: {task['name']}\n"
-                f"URL: {result.get('post_url', 'não disponível')}\n"
-                f"Redes: {result.get('redes', '?')}\n"
-                f"Card: https://app.clickup.com/t/{task_id}"
-            ),
-        )
     except Exception as e:
         erro = str(e)
         log.error(f"[Executor] Erro ao publicar: {erro}")
@@ -389,6 +402,39 @@ def process_pronto_publicar(task: dict):
             notify_failure(task["name"], erro)
         else:
             log.info("[Executor] Mesma falha já notificada, e-mail suprimido.")
+        return
+
+    # Daqui pra baixo o post JÁ está no ar. Falha aqui é de bookkeeping e não
+    # pode ser reportada como falha de publicação nem provocar nova tentativa.
+    post_url = result.get("post_url", "")
+    log.info(f"[Executor] Publicado com sucesso: {post_url or '?'}")
+    _publish_fail_notified.pop(task_id, None)
+
+    # o comentário é o que trava a republicação, então vai antes do status
+    if post_url:
+        _add_comment(task_id, f"{MARCA_PUBLICADO} {post_url}")
+
+    try:
+        update_task_status(task_id, STATUS_PUBLICADO)
+    except Exception as e:
+        log.error(f"[Executor] Post publicado mas o status não mudou: {e}")
+        notify_failure(
+            task["name"],
+            f"O post FOI publicado ({post_url}), mas o card não saiu de "
+            f"pronto_publicar: {e}\n"
+            f"Mova o card para '{STATUS_PUBLICADO}' à mão."
+        )
+        return
+
+    notify_success(
+        subject=f"[Social Agent] Post publicado",
+        body=(
+            f"Card: {task['name']}\n"
+            f"URL: {post_url or 'não disponível'}\n"
+            f"Redes: {result.get('redes', '?')}\n"
+            f"Card: https://app.clickup.com/t/{task_id}"
+        ),
+    )
 
 
 def _add_comment(task_id: str, text: str):
