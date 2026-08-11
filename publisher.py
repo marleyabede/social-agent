@@ -68,10 +68,24 @@ def cu_headers() -> dict:
 
 
 def get_cf(task: dict, field_id: str) -> str:
+    """
+    Lê custom field pelo ID. Dropdown devolve o NOME da opção, não o índice:
+    sem isso, formato vira '2' em vez de 'card' e todo o roteamento por
+    formato cai no fallback errado.
+    """
     for cf in task.get("custom_fields", []):
         if cf.get("id") == field_id:
             val = cf.get("value")
-            return str(val).strip() if val is not None else ""
+            if val is None:
+                return ""
+            if cf.get("type") == "drop_down":
+                _aliases = {"carrosel": "carrossel"}   # dropdown do ClickUp tem 1 's'
+                for opt in cf.get("type_config", {}).get("options", []):
+                    if opt.get("orderindex") == val:
+                        nome = opt.get("name", "")
+                        return _aliases.get(nome, nome)
+                return ""
+            return str(val).strip()
     return ""
 
 
@@ -180,6 +194,66 @@ def resolve_media_urls(media_url: str, formato: str) -> list[str]:
     return [normalize_media_url(media_url)]
 
 
+# ─── Link da mídia via comentário (alternativa ao custom field) ──────────────
+#
+# O plano do ClickUp limita o uso de custom fields. Quando CF_MEDIA_URL não está
+# disponível, o designer cola o link num comentário do card e o publisher lê dali.
+
+_URL_RE      = re.compile(r"https?://[^\s<>\"')\]]+")
+_MEDIA_TAG_RE = re.compile(r"^\s*(?:media|mídia|arte)\s*:\s*", re.IGNORECASE)
+
+
+def get_task_comments(task_id: str) -> list[dict]:
+    resp = requests.get(
+        f"{CU_BASE}/task/{task_id}/comment",
+        headers=cu_headers(),
+        timeout=15,
+    )
+    resp.raise_for_status()
+    return resp.json().get("comments", [])
+
+
+def _comment_text(c: dict) -> str:
+    txt = c.get("comment_text") or ""
+    if txt.strip():
+        return txt
+    # comentários ricos vêm em blocos
+    return "".join(b.get("text", "") for b in c.get("comment", []))
+
+
+def media_url_from_comments(task_id: str) -> str:
+    """
+    Procura o link da mídia nos comentários, do mais recente para o mais antigo.
+    Prefere comentário marcado com 'MEDIA:'. Ignora os comentários do próprio bot,
+    que contêm o link do post já publicado.
+    """
+    try:
+        comments = get_task_comments(task_id)
+    except Exception as e:
+        log.warning(f"[Publisher] Não consegui ler comentários da task {task_id}: {e}")
+        return ""
+
+    marcados, soltos = [], []
+    for c in reversed(comments):          # mais recente primeiro
+        txt = _comment_text(c).strip()
+        if not txt or txt.startswith("✅"):   # "✅ Publicado: ..." é do bot
+            continue
+        urls = _URL_RE.findall(txt)
+        if not urls:
+            continue
+        # nunca reaproveitar link de post já publicado
+        urls = [u for u in urls if "instagram.com" not in u and "youtube.com" not in u]
+        if not urls:
+            continue
+        (marcados if _MEDIA_TAG_RE.match(txt) else soltos).append(urls[0])
+
+    escolhido = (marcados or soltos or [""])[0]
+    if escolhido:
+        origem = "marcado com MEDIA:" if marcados else "último com link"
+        log.info(f"[Publisher] Mídia lida de comentário ({origem}): {escolhido[:80]}")
+    return escolhido
+
+
 # ─── Extração de contexto do card ────────────────────────────────────────────
 
 def extract_publish_context(task: dict) -> dict:
@@ -190,7 +264,11 @@ def extract_publish_context(task: dict) -> dict:
     redes_raw = get_cf(task, CF_REDES)
     redes     = parse_redes(redes_raw) if redes_raw else ["instagram"]
     formato   = get_cf(task, CF_FORMATO) or "reels"
+
+    # custom field primeiro; se o plano do ClickUp não permitir, cai pro comentário
     media_url = get_cf(task, CF_MEDIA_URL)
+    if not media_url:
+        media_url = media_url_from_comments(task["id"])
 
     copy_ig = parse_cf_json(task, CF_COPY_IG)
     copy_tk = parse_cf_json(task, CF_COPY_TK)
@@ -664,8 +742,9 @@ def publish_post(task: dict) -> dict:
     # Validação crítica — sem mídia aprovada não publica
     if not ctx["media_url"]:
         raise ValueError(
-            f"Campo CF_MEDIA_URL vazio na task {ctx['task_id']}. "
-            "O designer deve fazer upload da mídia e preencher o campo antes da publicação."
+            f"Sem link de mídia na task {ctx['task_id']}. O designer deve preencher o "
+            "campo media_url OU comentar no card no formato 'MEDIA: <link>' "
+            "(arquivo para card/story/reels, pasta do Drive para carrossel)."
         )
 
     resultados  = {}
