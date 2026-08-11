@@ -119,6 +119,19 @@ def get_due_date(task: dict) -> datetime | None:
 
 _HORARIO_RE = re.compile(r"^\s*(\d{1,2})\s*(?:[:hH]\s*(\d{1,2}))?")
 
+# Plano grátis do ClickUp não deixa editar custom field, então o horário vem
+# de uma linha na descrição do card. A descrição vence o CF.
+_DESC_HORARIO_RE = re.compile(r"(?im)^[\s>*\\_-]*hor[áa]rio\s*:\s*\**\s*([^\n*\\]+)")
+
+
+def _horario_do_card(task: dict) -> str | None:
+    texto = (task.get("text_content") or task.get("description")
+             or task.get("markdown_description") or "")
+    m = _DESC_HORARIO_RE.search(texto)
+    if m and m.group(1).strip():
+        return m.group(1).strip()
+    return get_custom_field(task, CF_HORARIO)
+
 
 def get_publish_datetime(task: dict) -> datetime | None:
     """
@@ -130,7 +143,7 @@ def get_publish_datetime(task: dict) -> datetime | None:
     if not due:
         return None
 
-    bruto = get_custom_field(task, CF_HORARIO)
+    bruto = _horario_do_card(task)
     if not bruto:
         return due
 

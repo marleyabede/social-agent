@@ -103,6 +103,25 @@ def parse_redes(raw: str) -> list[str]:
     return [r.strip().lower() for r in re.split(r"[,\s]+", raw) if r.strip()]
 
 
+# ─── Bloco de publicação na descrição ────────────────────────────────────────
+# Plano grátis do ClickUp não deixa editar custom field, então "redes" vem de
+# uma linha na descrição do card. A descrição vence o CF.
+
+def task_text(task: dict) -> str:
+    return (task.get("text_content")
+            or task.get("description")
+            or task.get("markdown_description")
+            or "")
+
+
+_DESC_REDES_RE = re.compile(r"(?im)^[\s>*\\_-]*redes\s*:\s*\**\s*([^\n*\\]+)")
+
+
+def desc_redes(task: dict) -> list[str]:
+    m = _DESC_REDES_RE.search(task_text(task))
+    return parse_redes(m.group(1)) if m else []
+
+
 # ─── Google Drive — pasta pública com os slides do carrossel ─────────────────
 #
 # Card, story e reels = 1 arquivo, o designer cola o link do arquivo.
@@ -262,7 +281,7 @@ def extract_publish_context(task: dict) -> dict:
     copy por rede, formato, URL da mídia aprovada.
     """
     redes_raw = get_cf(task, CF_REDES)
-    redes     = parse_redes(redes_raw) if redes_raw else ["instagram"]
+    redes     = desc_redes(task) or (parse_redes(redes_raw) if redes_raw else ["instagram"])
     formato   = get_cf(task, CF_FORMATO) or "reels"
 
     # custom field primeiro; se o plano do ClickUp não permitir, cai pro comentário

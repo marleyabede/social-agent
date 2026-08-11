@@ -36,6 +36,7 @@ CF_REDES    = "3f39ca1a-7ed1-43cb-8595-47a79d9cd014"   # short_text
 CF_HOOK     = "06fe7b07-4a8f-43b1-b543-9bed1d18ef6b"   # dropdown
 CF_GANCHO   = "ee3deffc-2c4d-4eac-bd4f-87cbd9e9db36"   # text
 CF_TEMA_ID  = "79d2e971-1bbf-405c-819e-659083d7835d"   # short_text
+CF_HORARIO  = "3cfbc872-be0e-463f-ab5b-9a3339df4220"   # short_text
 
 # Campos de saída (escritos pelo agent)
 CF_ROTEIRO  = "9277b94b-8aaa-40f6-961c-7f28ba5e3598"   # text
@@ -97,7 +98,9 @@ def extract_task_context(task: dict) -> dict:
         "persona": get_cf(task, CF_PERSONA)  or _infer_persona(task["name"]),
         "funil":   get_cf(task, CF_FUNIL)    or "tofu",
         "formato": get_cf(task, CF_FORMATO)  or "reels",
-        "redes":   _parse_redes(get_cf(task, CF_REDES)),
+        # descrição vence o CF: é o único lugar editável no plano grátis
+        "redes":   desc_redes(task) or _parse_redes(get_cf(task, CF_REDES)),
+        "horario": desc_horario(task) or get_cf(task, CF_HORARIO),
         "gancho":  get_cf(task, CF_GANCHO),
         "tema_id": get_cf(task, CF_TEMA_ID),
         "tema":    _extract_tema_from_title(task["name"]),
@@ -119,6 +122,33 @@ def _parse_redes(raw: str) -> list[str]:
     if not raw:
         return ["instagram"]
     return [r.strip().lower() for r in re.split(r"[,\s]+", raw) if r.strip()]
+
+
+# ─── Bloco de publicação na descrição ────────────────────────────────────────
+# O plano grátis do ClickUp não deixa editar custom field, então "redes" e
+# "horário" ficam num bloco no topo da descrição, que é editável à mão.
+# A descrição vence o custom field; assim uma edição manual não é desfeita
+# quando o conteúdo é regerado.
+
+def task_text(task: dict) -> str:
+    return (task.get("text_content")
+            or task.get("description")
+            or task.get("markdown_description")
+            or "")
+
+
+_DESC_REDES_RE   = re.compile(r"(?im)^[\s>*\\_-]*redes\s*:\s*\**\s*([^\n*\\]+)")
+_DESC_HORARIO_RE = re.compile(r"(?im)^[\s>*\\_-]*hor[áa]rio\s*:\s*\**\s*([^\n*\\]+)")
+
+
+def desc_redes(task: dict) -> list[str]:
+    m = _DESC_REDES_RE.search(task_text(task))
+    return _parse_redes(m.group(1)) if m else []
+
+
+def desc_horario(task: dict) -> str:
+    m = _DESC_HORARIO_RE.search(task_text(task))
+    return m.group(1).strip() if m else ""
 
 
 def _extract_tema_from_title(title: str) -> str:
@@ -728,6 +758,15 @@ def _format_description(script: dict, copy: dict, brief: dict, ctx: dict) -> str
     redes   = ctx["redes"]
     formato = ctx.get("formato", "reels")
     sections = []
+
+    # ── Publicação (editável à mão — o agente lê daqui, não do custom field) ──
+    sections.append("## ⚙️ Publicação")
+    sections.append(f"**Redes:** {', '.join(redes)}")
+    if ctx.get("horario"):
+        sections.append(f"**Horário:** {ctx['horario']}")
+    sections.append("_Edite estas linhas para mudar onde e quando o post sai. "
+                    "A data vem do due date do card._")
+    sections.append("\n---")
 
     # ── Conteúdo principal (format-specific) ──
     if formato == "card":
