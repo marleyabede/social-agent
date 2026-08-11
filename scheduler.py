@@ -14,6 +14,7 @@ Web server principal (porta 8080):
 """
 
 import os
+import re
 import json
 import time
 import threading
@@ -38,6 +39,10 @@ CLICKUP_LIST_ID   = os.environ["CLICKUP_LIST_ID"]
 
 EXECUTOR_INTERVAL_SEC = 5 * 60   # polling a cada 5 minutos
 PLANNER_HOUR_BRT      = 9        # segunda-feira às 09h BRT
+
+# O due_date do ClickUp guarda a DATA de publicação; a HORA vem deste campo.
+# Sem isso o post sai na hora gravada no due_date (04:00), não no horário editorial.
+CF_HORARIO = os.environ.get("CF_HORARIO", "3cfbc872-be0e-463f-ab5b-9a3339df4220")
 
 # ─── Logging ─────────────────────────────────────────────────────────────────
 
@@ -110,6 +115,37 @@ def get_due_date(task: dict) -> datetime | None:
     if not due_ms:
         return None
     return datetime.fromtimestamp(int(due_ms) / 1000, tz=BRT)
+
+
+_HORARIO_RE = re.compile(r"^\s*(\d{1,2})\s*(?:[:hH]\s*(\d{1,2}))?")
+
+
+def get_publish_datetime(task: dict) -> datetime | None:
+    """
+    Momento real da publicação: DATA do due_date + HORA do campo 'horario'.
+    O due_date do ClickUp vem gravado às 04:00, que não é horário de postagem.
+    Sem 'horario' válido, mantém o due_date como estava.
+    """
+    due = get_due_date(task)
+    if not due:
+        return None
+
+    bruto = get_custom_field(task, CF_HORARIO)
+    if not bruto:
+        return due
+
+    m = _HORARIO_RE.match(bruto)
+    if not m:
+        log.warning(f"[Executor] Campo horario ilegível ({bruto!r}), usando due_date.")
+        return due
+
+    hora   = int(m.group(1))
+    minuto = int(m.group(2) or 0)
+    if not (0 <= hora <= 23 and 0 <= minuto <= 59):
+        log.warning(f"[Executor] Campo horario fora da faixa ({bruto!r}), usando due_date.")
+        return due
+
+    return due.replace(hour=hora, minute=minuto, second=0, microsecond=0)
 
 # ─── State machine — estados do ClickUp ──────────────────────────────────────
 #
@@ -279,12 +315,15 @@ def process_aguarda_ap2(task: dict):
     )
 
 
+_publish_fail_notified: dict[str, str] = {}   # task_id -> última falha já notificada
+
+
 def process_pronto_publicar(task: dict):
     """PRONTO_PUBLICAR → PUBLICADO: verifica data/hora e publica."""
     task_id = task["id"]
     log.info(f"[Executor] Verificando publicação: {task['name'][:60]}")
 
-    due = get_due_date(task)
+    due = get_publish_datetime(task)
     now = datetime.now(BRT)
 
     if due and due > now:
@@ -303,6 +342,7 @@ def process_pronto_publicar(task: dict):
             _add_comment(task_id, f"✅ Publicado: {result['post_url']}")
 
         update_task_status(task_id, STATUS_PUBLICADO)
+        _publish_fail_notified.pop(task_id, None)
         log.info(f"[Executor] Publicado com sucesso: {result.get('post_url', '?')}")
         notify_success(
             subject=f"[Social Agent] Post publicado",
@@ -314,8 +354,16 @@ def process_pronto_publicar(task: dict):
             ),
         )
     except Exception as e:
-        log.error(f"[Executor] Erro ao publicar: {e}")
-        notify_failure(task["name"], str(e))
+        erro = str(e)
+        log.error(f"[Executor] Erro ao publicar: {erro}")
+        # o card continua em pronto_publicar e o retry segue a cada ciclo, pra
+        # publicar sozinho assim que o link for corrigido. Mas notificar a cada
+        # 5 min gera dezenas de e-mails iguais: só avisa quando a falha muda.
+        if _publish_fail_notified.get(task_id) != erro:
+            _publish_fail_notified[task_id] = erro
+            notify_failure(task["name"], erro)
+        else:
+            log.info("[Executor] Mesma falha já notificada, e-mail suprimido.")
 
 
 def _add_comment(task_id: str, text: str):
