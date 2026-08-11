@@ -624,6 +624,25 @@ def build_prompt_all(ctx: dict) -> str:
     secao_conteudo = _secao_conteudo(formato)
     schema_saida   = _schema_saida(formato, redes, duracao, dimensoes, logo_val, logo_pos)
 
+    feedback = (ctx.get("feedback") or "").strip()
+    feedback_section = ""
+    if feedback:
+        feedback_section = f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CORREÇÃO PEDIDA — PRIORIDADE MÁXIMA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Isto é uma REGERAÇÃO. A versão anterior foi reprovada com este feedback:
+
+<<<
+{feedback}
+>>>
+
+Trate cada ponto acima como requisito, não como sugestão. Antes de responder,
+confira item por item se o novo conteúdo resolve o que foi apontado.
+Repetir o erro reprovado invalida a entrega.
+Se algum ponto do feedback conflitar com as regras abaixo, o feedback vence.
+"""
+
     # Para card: gancho_instrucao não vai no visual — só orienta a legenda
     if formato == "card":
         gancho_instrucao = (
@@ -647,7 +666,7 @@ Formato:  {FORMATO_MAP[formato]}
 Duração:  {duracao}
 Dimensões: {dimensoes}{gancho_instrucao}
 {produto_section}
-
+{feedback_section}
 {REGRAS_BASE}
 
 {secao_conteudo}
@@ -702,16 +721,22 @@ def _copy_rede_desc(rede: str) -> str:
 
 # ─── Geração dos 3 entregáveis ───────────────────────────────────────────────
 
-def generate_content(task: dict):
+def generate_content(task: dict, feedback: str = ""):
     """
     Pipeline principal: gera roteiro + copy + briefing em 1 chamada e salva no card.
     Chamado pelo scheduler quando card entra em GERANDO.
+
+    feedback: comentário de revisão. Quando vem preenchido, entra no prompt como
+    correção de prioridade máxima — é o que faz a regeração atender ao pedido.
     """
     ctx = extract_task_context(task)
+    ctx["feedback"] = feedback
     task_id = ctx["task_id"]
 
     log.info(f"[Agent] Gerando conteúdo: {ctx['tema'][:60]}")
     log.info(f"[Agent] Persona: {ctx['persona']} | Funil: {ctx['funil']} | Formato: {ctx['formato']}")
+    if feedback:
+        log.info(f"[Agent] Aplicando correção pedida: {feedback[:120]}")
 
     log.info("[Agent] Chamada única — Roteiro + Copy + Briefing...")
     raw = ask_claude(build_prompt_all(ctx), max_tokens=5000)
@@ -904,10 +929,10 @@ def regenerate_item(task: dict, feedback: str):
     log.info(f"[Agent] Revisão solicitada: {feedback[:80]}")
 
     item = _detect_item(feedback)
-    log.info(f"[Agent] Entregável detectado para revisão: {item}")
+    log.info(f"[Agent] Entregável com foco na revisão: {item}")
 
-    log.info(f"[Agent] Regerando todos os entregáveis com feedback: {item}")
-    generate_content(task)
+    # o feedback vai pro prompt: sem isso a regeração ignorava o que foi pedido
+    generate_content(task, feedback=feedback)
     log.info(f"[Agent] ✓ Revisão concluída para task {task_id}")
 
 
