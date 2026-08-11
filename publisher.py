@@ -124,6 +124,19 @@ def desc_redes(task: dict) -> list[str]:
 
 _REDE_LABEL = {"instagram": "Instagram", "tiktok": "TikTok", "youtube": "YouTube"}
 
+# Onde o bloco de uma rede termina. O text_content do ClickUp remove os "---" e
+# o "##" dos títulos, sobrando só o emoji, então não dá pra confiar neles:
+# os nomes das seções são o único delimitador estável nos dois formatos.
+_FIM_DA_SECAO = (
+    r"(?="
+    r"^\**(?:Instagram|TikTok|YouTube)\**\s*$"          # próxima rede
+    r"|^\s*(?:[-*_]\s*){3,}$"                            # régua --- ou * * *
+    r"|^.{0,6}(?:Briefing de Design|Visual do Card"      # próxima seção
+    r"|Layout do Card|Carrossel|Roteiro|Publicação)\b"
+    r"|^_?Gerado pelo Social Agent"                      # rodapé
+    r"|\Z)"
+)
+
 
 def copy_from_description(task: dict, rede: str) -> dict:
     """
@@ -137,8 +150,7 @@ def copy_from_description(task: dict, rede: str) -> dict:
         return {}
 
     m = re.search(
-        rf"^\**{label}\**\s*$\r?\n(.*?)"
-        rf"(?=^\**(?:Instagram|TikTok|YouTube)\**\s*$|^\s*---\s*$|\Z)",
+        rf"^\**{label}\**\s*$\r?\n(.*?){_FIM_DA_SECAO}",
         texto, re.I | re.M | re.S,
     )
     if not m:
