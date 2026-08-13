@@ -198,6 +198,23 @@ def cu_headers() -> dict:
     return {"Authorization": CLICKUP_API_TOKEN, "Content-Type": "application/json"}
 
 
+# Trava de vazão: sem revisão, a fila de copy só cresce. Acima deste número o
+# planner não cria card novo e o executor não puxa card do backlog.
+LIMITE_AGUARDA_AP1 = int(os.environ.get("LIMITE_AGUARDA_AP1", "10"))
+
+
+def contar_por_status(status: str) -> int:
+    """Quantos cards abertos existem num status."""
+    resp = requests.get(
+        f"{CU_BASE}/list/{CLICKUP_LIST_ID}/task",
+        headers=cu_headers(),
+        params={"statuses[]": status, "include_closed": "false"},
+        timeout=15,
+    )
+    resp.raise_for_status()
+    return len(resp.json().get("tasks", []))
+
+
 def get_recent_tasks(days: int = 28) -> list[dict]:
     """Busca tasks criadas nos últimos N dias para deduplicação de temas."""
     since_ms = int((datetime.now(BRT) - timedelta(days=days)).timestamp() * 1000)
@@ -609,6 +626,24 @@ def run_planner() -> dict:
     """
     log.info("═" * 60)
     log.info("[Planner] Iniciando planejamento semanal")
+
+    # 0. Trava de vazão — não adianta planejar semana nova com a fila cheia
+    try:
+        fila = contar_por_status("aguarda_ap1")
+        log.info(f"[Planner] {fila} card(s) aguardando revisão de copy")
+        if fila >= LIMITE_AGUARDA_AP1:
+            motivo = (
+                f"{fila} cards em aguarda_ap1 (limite {LIMITE_AGUARDA_AP1}). "
+                f"Nenhum card novo criado. Revise a fila e rode de novo."
+            )
+            log.warning(f"[Planner] {motivo}")
+            return {
+                "semana": "—", "total": 0, "task_ids": [], "posts": [],
+                "pulado": True, "fila": fila, "motivo": motivo,
+            }
+    except Exception as e:
+        # falha ao contar não pode travar o planejamento
+        log.warning(f"[Planner] Não consegui checar a fila de revisão: {e}. Seguindo.")
 
     # 1. Busca tasks recentes para deduplicação
     try:

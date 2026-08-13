@@ -214,6 +214,22 @@ def _import_publisher():
 
 # ─── Executor: processa um card por vez ──────────────────────────────────────
 
+LIMITE_AGUARDA_AP1 = int(os.environ.get("LIMITE_AGUARDA_AP1", "10"))
+
+
+def fila_revisao() -> int:
+    """
+    Quantos cards esperam revisão de copy. Erro ao contar devolve 0 de
+    propósito: é preferível gerar um card a mais do que travar a esteira
+    inteira por uma falha passageira da API.
+    """
+    try:
+        return len(get_tasks_by_status(STATUS_AGUARDA_AP1))
+    except Exception as e:
+        log.warning(f"[Executor] Não consegui contar a fila de revisão: {e}")
+        return 0
+
+
 def process_backlog(task: dict):
     """BACKLOG → GERANDO: marca que o agente pegou o card."""
     task_id = task["id"]
@@ -485,7 +501,18 @@ def run_executor_cycle():
         log.info(f"[Executor] Ciclo #{_executor_runs + 1} iniciado")
         total_processed = 0
 
+        # Trava de vazão: com a fila de revisão cheia, não puxa card novo do
+        # backlog. Cards já em 'gerando' seguem, pra não ficarem pela metade.
+        fila = fila_revisao()
+        if fila >= LIMITE_AGUARDA_AP1:
+            log.warning(
+                f"[Executor] {fila} card(s) em '{STATUS_AGUARDA_AP1}' "
+                f"(limite {LIMITE_AGUARDA_AP1}). Geração de novos cards pausada."
+            )
+
         for status, processor_fn in PROCESSOR.items():
+            if status == STATUS_BACKLOG and fila >= LIMITE_AGUARDA_AP1:
+                continue
             try:
                 tasks = get_tasks_by_status(status)
                 if not tasks:
@@ -543,23 +570,36 @@ def loop_planner():
                 summary = run_planner()
                 with _lock:
                     _last_planner = now
-                log.info(
-                    f"[Planner] ✓ {summary['total']} cards criados "
-                    f"para semana {summary['semana']}"
-                )
-                notify_success(
-                    subject=f"[Social Agent] Semana planejada — {summary['total']} cards criados",
-                    body=(
-                        f"Semana: {summary['semana']}\n"
-                        f"Total de cards: {summary['total']}\n\n"
-                        + "\n".join(
-                            f"• [{p['formato'].upper()}] {p['persona'].capitalize()} "
-                            f"({p['funil'].upper()}) — {p['pub_date']} {p['horario']}\n"
-                            f"  {p['tema']}"
-                            for p in summary["posts"]
-                        )
-                    ),
-                )
+
+                if summary.get("pulado"):
+                    log.warning(f"[Planner] Planejamento pulado: {summary['motivo']}")
+                    notify_success(
+                        subject="[Social Agent] Planejamento pausado — fila de revisão cheia",
+                        body=(
+                            f"Nenhum card novo foi criado esta semana.\n\n"
+                            f"{summary['motivo']}\n\n"
+                            f"Revise os cards em aguarda_ap1 e dispare o planejamento "
+                            f"manualmente em POST /run/planner quando a fila baixar."
+                        ),
+                    )
+                else:
+                    log.info(
+                        f"[Planner] ✓ {summary['total']} cards criados "
+                        f"para semana {summary['semana']}"
+                    )
+                    notify_success(
+                        subject=f"[Social Agent] Semana planejada — {summary['total']} cards criados",
+                        body=(
+                            f"Semana: {summary['semana']}\n"
+                            f"Total de cards: {summary['total']}\n\n"
+                            + "\n".join(
+                                f"• [{p['formato'].upper()}] {p['persona'].capitalize()} "
+                                f"({p['funil'].upper()}) — {p['pub_date']} {p['horario']}\n"
+                                f"  {p['tema']}"
+                                for p in summary["posts"]
+                            )
+                        ),
+                    )
             except Exception as e:
                 log.error(f"[Planner] Erro: {e}")
                 notify_failure("Planejamento semanal", str(e))

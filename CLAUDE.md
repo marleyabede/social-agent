@@ -51,6 +51,12 @@ Estados de pausa (agente não age, aguarda mudança manual):
 - design       — designer produz os assets
 - aguarda_ap2  — você revisa o visual final
 
+## Trava de vazão (LIMITE_AGUARDA_AP1, default 10)
+Com 10+ cards em aguarda_ap1, o planner não cria card novo e o executor não
+puxa card do backlog. Cards já em 'gerando' terminam, pra não ficarem pela
+metade. Falha ao contar a fila não trava a esteira (fail-open, só loga).
+Depois de revisar a fila, dispare POST /run/planner para planejar a semana.
+
 ## Custom fields do ClickUp
 Criar manualmente na lista e preencher os CF_* no Railway.
 IDs disponíveis via: GET https://api.clickup.com/api/v2/list/{CLICKUP_LIST_ID}/field
@@ -65,6 +71,11 @@ Campo do designer (preenchido manualmente antes da publicação):
   CF_MEDIA_URL — card/story/reels: URL pública do arquivo
                  carrossel: URL da PASTA pública do Drive com 1 arquivo por slide,
                  nomeados slide-1, slide-2... (a ordem vem do nome do arquivo)
+
+  ALTERNATIVA sem custom field (limite do plano ClickUp):
+  o designer comenta no card "MEDIA: <link>". O publisher usa o CF quando existe
+  e cai pro comentário quando está vazio. Comentários do bot (✅ Publicado) e
+  links de instagram/youtube são ignorados na varredura.
 
 ## Endpoints do web server
 ```
