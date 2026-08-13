@@ -261,10 +261,22 @@ def drive_folder_images(folder_url: str) -> list[str]:
 def resolve_media_urls(media_url: str, formato: str) -> list[str]:
     """
     Devolve a lista de URLs de mídia prontas para a API da rede.
-    Carrossel a partir de pasta do Drive vira N URLs; o resto vira 1.
+
+    Carrossel aceita dois formatos de entrega:
+      - pasta pública do Drive (precisa de GOOGLE_API_KEY), ou
+      - vários links de arquivo no mesmo comentário, na ordem de publicação
+        (não precisa de chave nenhuma)
+    Os demais formatos usam 1 arquivo.
     """
     if formato == "carrossel" and is_drive_folder(media_url):
         return drive_folder_images(media_url)
+
+    urls = _URL_RE.findall(media_url or "")
+    if len(urls) > 1:
+        # a ordem digitada no comentário é a ordem dos slides
+        log.info(f"[Publisher] {len(urls)} links no comentário, usados nessa ordem")
+        return [normalize_media_url(u) for u in urls]
+
     return [normalize_media_url(media_url)]
 
 
@@ -329,7 +341,9 @@ def media_url_from_comments(task_id: str) -> str:
         urls = [u for u in urls if "instagram.com" not in u and "youtube.com" not in u]
         if not urls:
             continue
-        (marcados if _MEDIA_TAG_RE.match(txt) else soltos).append(urls[0])
+        # guarda TODOS os links do comentário: carrossel pode vir como uma
+        # lista de arquivos em vez de uma pasta do Drive
+        (marcados if _MEDIA_TAG_RE.match(txt) else soltos).append(" ".join(urls))
 
     escolhido = (marcados or soltos or [""])[0]
     if escolhido:

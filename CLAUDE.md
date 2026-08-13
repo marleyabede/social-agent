@@ -72,6 +72,10 @@ Campo do designer (preenchido manualmente antes da publicação):
                  carrossel: URL da PASTA pública do Drive com 1 arquivo por slide,
                  nomeados slide-1, slide-2... (a ordem vem do nome do arquivo)
 
+  Carrossel sem GOOGLE_API_KEY: em vez da pasta, o designer cola um link de
+  ARQUIVO por slide no mesmo comentário, na ordem de publicação. O publisher
+  detecta múltiplos links e monta o carrossel a partir deles.
+
   ALTERNATIVA sem custom field (limite do plano ClickUp):
   o designer comenta no card "MEDIA: <link>". O publisher usa o CF quando existe
   e cai pro comentário quando está vazio. Comentários do bot (✅ Publicado) e
