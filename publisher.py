@@ -131,8 +131,11 @@ _FIM_DA_SECAO = (
     r"(?="
     r"^\**(?:Instagram|TikTok|YouTube)\**\s*$"          # próxima rede
     r"|^\s*(?:[-*_]\s*){3,}$"                            # régua --- ou * * *
-    r"|^.{0,6}(?:Briefing de Design|Visual do Card"      # próxima seção
-    r"|Layout do Card|Carrossel|Roteiro|Publicação)\b"
+    # Próxima seção. O nome PRECISA vir depois de "##" e/ou de um emoji, senão
+    # prosa comum encerra a legenda: "No carrossel acima..." truncava o texto.
+    r"|^(?:#{1,6}\s*)?(?:[^\w\s]\s*)+"
+    r"(?:Briefing de Design|Visual do Card|Layout do Card"
+    r"|Carrossel|Roteiro|Copy\s*/\s*Legendas|Publicação)\b"
     r"|^_?Gerado pelo Social Agent"                      # rodapé
     r"|\Z)"
 )
