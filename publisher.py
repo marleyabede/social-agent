@@ -514,6 +514,11 @@ def _publish_ig_carousel(caption: str, urls: list[str], base: str) -> dict:
     _check_ig_response(pai, "criar container do carrossel")
     container_id = pai.json()["id"]
 
+    # O container pai só fica publicável depois de processar os filhos. Sem
+    # esperar, a Graph API responde [9007] Media ID is not available.
+    log.info("[Instagram] Aguardando o carrossel ficar pronto...")
+    _wait_ig_container(container_id, base, intervalo=3)
+
     log.info("[Instagram] Publicando carrossel...")
     pub = requests.post(
         f"{base}/{IG_BUSINESS_ID}/media_publish",
@@ -528,9 +533,14 @@ def _publish_ig_carousel(caption: str, urls: list[str], base: str) -> dict:
     return {"url": permalink, "id": media_id}
 
 
-def _wait_ig_container(container_id: str, base: str, max_wait: int = 120):
-    """Aguarda processamento do vídeo no Instagram (status FINISHED)."""
-    for attempt in range(max_wait // 10):
+def _wait_ig_container(container_id: str, base: str, max_wait: int = 120,
+                       intervalo: int = 10):
+    """
+    Aguarda o container ficar publicável (status FINISHED).
+    Vale para vídeo e para o container pai do carrossel: publicar antes da
+    hora devolve [9007] Media ID is not available.
+    """
+    for attempt in range(max(1, max_wait // intervalo)):
         resp = requests.get(
             f"{base}/{container_id}",
             params={"fields": "status_code", "access_token": IG_ACCESS_TOKEN},
@@ -541,9 +551,9 @@ def _wait_ig_container(container_id: str, base: str, max_wait: int = 120):
         if status == "FINISHED":
             return
         if status == "ERROR":
-            raise RuntimeError(f"Instagram rejeitou o vídeo: {resp.json()}")
-        time.sleep(10)
-    raise TimeoutError("Instagram não processou o vídeo a tempo")
+            raise RuntimeError(f"Instagram rejeitou a mídia: {resp.json()}")
+        time.sleep(intervalo)
+    raise TimeoutError(f"Instagram não processou a mídia em {max_wait}s")
 
 
 def _get_ig_permalink(media_id: str, base: str) -> str:
